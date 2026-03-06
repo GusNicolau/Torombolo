@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
+  Alert,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,21 +10,52 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { usePlayers } from "../context/PlayersContext";
+const TAPETE = require("../../assets/tapete/Tapete2.png");
+// Avatares por defecto disponibles
+const AVATARES = [
+  require("../../assets/moustache/ale.png"),
+  require("../../assets/moustache/andreu.png"),
+  require("../../assets/moustache/carlos.png"),
+  require("../../assets/moustache/dani.png"),
+  require("../../assets/moustache/gustavo.png"),
+  require("../../assets/moustache/mario.png"),
+];
 
 export default function PlayersScreen({ navigation }) {
   const [playerName, setPlayerName] = useState("");
   const { jugadores, addJugador, removeJugador, moveJugador } = usePlayers();
 
+  let maxAlertShown = false;
   const addPlayer = () => {
     if (playerName.trim() === "") return;
-
+    if (jugadores.length >= 4) {
+      if (!maxAlertShown) {
+        Alert.alert(
+          "Máximo 4 jugadores",
+          "No puedes añadir más de 4 jugadores.",
+        );
+        maxAlertShown = true;
+      }
+      return;
+    }
+    // Evitar repetir avatar si hay disponibles
+    const usados = jugadores.map((j) => j.imagen);
+    const disponibles = AVATARES.filter((a) => !usados.includes(a));
+    let randomAvatar;
+    if (disponibles.length > 0) {
+      randomAvatar =
+        disponibles[Math.floor(Math.random() * disponibles.length)];
+    } else {
+      randomAvatar = AVATARES[Math.floor(Math.random() * AVATARES.length)];
+    }
     addJugador({
       nombre: playerName.trim(),
-      imagen: null,
+      imagen: randomAvatar,
     });
-
     setPlayerName("");
+    maxAlertShown = false;
   };
 
   const movePlayerUp = (nombre) => {
@@ -53,16 +86,19 @@ export default function PlayersScreen({ navigation }) {
   const getRoleColor = (index) => {
     if (jugadores.length === 4) {
       // Oros, Copas, Espadas, Bastos
-      return ["#FFD700", "#E74C3C", "#2980b9", "#27ae60"][index] || "#95a5a6";
+      return ["#fcb33f", "#40b1b9", "#9b59b6", "#b6ec23"][index] || "#95a5a6";
     } else {
       // 3 jugadores: 2-4, 5-7, figuras
-      return ["#f39c12", "#3498db", "#9b59b6"][index] || "#95a5a6";
+      return ["#fcb33f", "#40b1b9", "#9b59b6"][index] || "#95a5a6";
     }
   };
 
   const getRoleLabel = (index) => {
     if (jugadores.length === 4) {
-      return ["♦ Oros", "♥ Copas", "♠ Espadas", "♣ Bastos"][index] || "Sin rol";
+      // Moneda, Espada, Copa, Basto
+      return (
+        ["🪙 Oros", "⚔️ Espadas", "🍷 Copas", "🪵 Bastos"][index] || "Sin rol"
+      );
     } else {
       return (
         ["🎴 Cartas 2-4", "🎴 Cartas 5-7", "👑 Figuras"][index] || "Sin rol"
@@ -71,18 +107,13 @@ export default function PlayersScreen({ navigation }) {
   };
 
   const renderPlayer = (item, index) => {
-    const tieneImagen = !!item.imagen;
+    // Siempre mostrar imagen, si no hay, usar avatar por defecto
+    const avatarSource = item.imagen || AVATARES[0];
     return (
       <View style={styles.playerCard}>
         <View style={styles.playerContent}>
           <View style={styles.playerInfo}>
-            {tieneImagen ? (
-              <Image source={item.imagen} style={styles.avatar} />
-            ) : (
-              <View style={styles.placeholderAvatar}>
-                <Text style={styles.placeholderText}>👤</Text>
-              </View>
-            )}
+            <Image source={avatarSource} style={styles.avatar} />
             <View style={styles.playerDetails}>
               <Text style={styles.playerName}>{item.nombre}</Text>
               <View
@@ -124,114 +155,173 @@ export default function PlayersScreen({ navigation }) {
     );
   };
 
-  const canPlay = jugadores.length === 3 || jugadores.length === 4;
+  const canPlay = jugadores.length >= 3 && jugadores.length <= 4;
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Título con espaciado superior */}
-        <Text style={styles.title}>JUGADORES</Text>
-
-        {/* Input + botón añadir */}
-        <View style={styles.inputSection}>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre del jugador"
-            placeholderTextColor="#999"
-            value={playerName}
-            onChangeText={setPlayerName}
-            maxLength={20}
-          />
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={addPlayer}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>+ AÑADIR</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Botones de acción */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate("Moustache")}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.secondaryButtonText}>🎭 MOUSTACHE</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.primaryButton, !canPlay && styles.disabledButton]}
-            onPress={() => {
-              if (canPlay)
-                navigation.navigate("Game", { numPlayers: jugadores.length });
-            }}
-            disabled={!canPlay}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>
-              ▶ JUGAR{" "}
-              {jugadores.length < 3
-                ? `(${jugadores.length}/3)`
-                : jugadores.length > 4
-                  ? "(máx 4)"
-                  : ""}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Info si no hay suficientes jugadores */}
-        {jugadores.length < 3 && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              ⚠️ Se necesitan mínimo 3 jugadores
-            </Text>
+    <ImageBackground
+      source={TAPETE}
+      style={styles.bg}
+      imageStyle={{ resizeMode: "cover" }}
+    >
+      <View style={styles.overlay}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Menu")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.backButtonText}>◀ Volver</Text>
+        </TouchableOpacity>
+        <View style={{ marginBottom: 38 }} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Input + botón añadir */}
+          <View style={styles.inputSection}>
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre del jugador"
+              placeholderTextColor="#999"
+              value={playerName}
+              onChangeText={setPlayerName}
+              maxLength={20}
+              editable={jugadores.length < 4}
+            />
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                jugadores.length >= 4 && styles.disabledButton,
+              ]}
+              onPress={addPlayer}
+              activeOpacity={0.8}
+              disabled={jugadores.length >= 4}
+            >
+              <Text style={styles.primaryButtonText}>+ AÑADIR</Text>
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Lista de jugadores */}
-        <View style={styles.playersList}>
-          {jugadores.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No hay jugadores</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Añade al menos 3 para empezar
+          {jugadores.length >= 4 && (
+            <View style={[styles.infoBox, { marginBottom: 0 }]}>
+              <Text style={styles.infoText}>Máximo 4 jugadores alcanzado</Text>
+            </View>
+          )}
+
+          {/* Botones de acción */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                jugadores.length >= 4 && styles.disabledButton,
+              ]}
+              onPress={() => {
+                if (jugadores.length >= 4) {
+                  Alert.alert(
+                    "Máximo 4 jugadores",
+                    "Máximo de 4 jugadores alcanzado.",
+                  );
+                  return;
+                }
+                navigation.navigate("Moustache");
+              }}
+              activeOpacity={jugadores.length >= 4 ? 0.5 : 0.8}
+              disabled={jugadores.length >= 4}
+            >
+              <Text style={styles.secondaryButtonText}>AVATARES</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.primaryButton, !canPlay && styles.disabledButton]}
+              onPress={() => {
+                if (canPlay) {
+                  navigation.navigate("Game", { numPlayers: jugadores.length });
+                } else {
+                  Alert.alert(
+                    "Jugadores insuficientes",
+                    "Debes añadir entre 3 y 4 jugadores para jugar.",
+                  );
+                }
+              }}
+              disabled={!canPlay}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>
+                ▶ JUGAR{" "}
+                {jugadores.length < 3
+                  ? `(${jugadores.length}/3)`
+                  : jugadores.length > 4
+                    ? "(máx 4)"
+                    : ""}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Info si no hay suficientes jugadores o demasiados */}
+          {jugadores.length < 3 && (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>
+                ⚠️ Se necesitan mínimo 3 jugadores
               </Text>
             </View>
-          ) : (
-            jugadores.map((j, idx) => (
-              <View key={`${j.nombre}-${idx}`}>{renderPlayer(j, idx)}</View>
-            ))
           )}
-        </View>
-      </ScrollView>
-    </View>
+
+          {/* Lista de jugadores */}
+          <View style={styles.playersList}>
+            {jugadores.length === 0 ? (
+              <View style={styles.emptyState}></View>
+            ) : (
+              jugadores.map((j, idx) => (
+                <View key={`${j.nombre}-${idx}`}>{renderPlayer(j, idx)}</View>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  backButton: {
+    alignSelf: "flex-start",
+    marginLeft: 18,
+    marginTop: 50,
+    marginBottom: -20,
+    backgroundColor: "#222",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#000",
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 1,
+  },
+  backButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    textShadowColor: "#000",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  bg: {
     flex: 1,
-    backgroundColor: "#1b1b1b",
+    width: "100%",
+    height: "100%",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(27,27,27,0.92)",
     paddingTop: 20,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 30,
+    paddingBottom: 60,
   },
-  title: {
-    fontSize: 40,
-    fontWeight: "900",
-    color: "#f5f5f5",
-    textAlign: "center",
-    marginBottom: 30,
-    marginTop: 20,
-    letterSpacing: 2,
-  },
+
   inputSection: {
     flexDirection: "row",
     gap: 10,
@@ -239,82 +329,114 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#2c2c2c",
+    backgroundColor: "#111",
     color: "#fff",
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 8,
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "700",
     borderWidth: 2,
-    borderColor: "#444",
+    borderColor: "#c0392b",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
   },
   primaryButton: {
-    backgroundColor: "#c0392b",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: "#222",
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#a03028",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   primaryButtonText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 17,
+    fontWeight: "900",
     letterSpacing: 1,
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   secondaryButton: {
-    backgroundColor: "#2980b9",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: "#222",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#2371a0",
+    borderWidth: 2,
+    borderColor: "#c0392b",
     flex: 1,
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.7,
+    shadowRadius: 4,
   },
   secondaryButtonText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 17,
+    fontWeight: "900",
     letterSpacing: 1,
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   disabledButton: {
     backgroundColor: "#7f8c8d",
-    borderColor: "#6b7778",
-    opacity: 0.6,
+    borderColor: "#ffffff",
+    opacity: 0.5,
   },
   actionButtons: {
     flexDirection: "row",
     gap: 10,
     marginBottom: 15,
+    marginTop: 40,
   },
   infoBox: {
-    backgroundColor: "#34495e",
+    backgroundColor: "#111",
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#f39c12",
+    borderLeftColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
   },
   infoText: {
-    color: "#ecf0f1",
+    color: "#c0392b",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontFamily: "monospace",
   },
   playersList: {
     gap: 12,
   },
   playerCard: {
-    backgroundColor: "#2c2c2c",
-    borderRadius: 10,
-    padding: 14,
+    backgroundColor: "#222",
+    borderRadius: 14,
+    padding: 18,
     borderWidth: 2,
-    borderColor: "#444",
+    borderColor: "#888",
+    shadowColor: "#888",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
   },
   playerContent: {
     flexDirection: "row",
@@ -328,43 +450,44 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#444",
-  },
-  placeholderAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#3c3c3c",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  placeholderText: {
-    fontSize: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 10,
+    backgroundColor: "#888",
+    borderWidth: 2,
+    borderColor: "#c0392b",
   },
   playerDetails: {
     flex: 1,
     gap: 6,
   },
   playerName: {
-    color: "#ecf0f1",
-    fontSize: 16,
-    fontWeight: "700",
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   roleBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: "flex-start",
+    backgroundColor: "#888",
+    borderWidth: 2,
+    borderColor: "#b3afaf",
+    marginTop: 2,
   },
   roleText: {
     color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   playerActions: {
     flexDirection: "row",
@@ -372,34 +495,50 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   moveButton: {
-    backgroundColor: "#34495e",
-    borderRadius: 6,
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  moveButtonText: {
-    color: "#ecf0f1",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  deleteButton: {
-    backgroundColor: "#e74c3c",
-    borderRadius: 6,
-    width: 36,
-    height: 36,
+    backgroundColor: "#222",
+    borderRadius: 8,
+    width: 38,
+    height: 38,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
   },
-  deleteText: {
+  moveButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  deleteButton: {
+    backgroundColor: "#222",
+    borderRadius: 8,
+    width: 38,
+    height: 38,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+  },
+  deleteText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   emptyState: {
     alignItems: "center",
@@ -407,13 +546,20 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateText: {
-    color: "#95a5a6",
-    fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "900",
+    fontFamily: "monospace",
     marginBottom: 8,
+    textShadowColor: "#000",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   emptyStateSubtext: {
-    color: "#7f8c8d",
-    fontSize: 14,
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });

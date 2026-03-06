@@ -14,47 +14,47 @@ import { usePlayers } from "../context/PlayersContext";
 
 const CARTAS = {
   // Bastos
-  "1Bastos": require("../../assets/cartas/1Bastos.jpeg"),
-  "2Bastos": require("../../assets/cartas/2Bastos.jpeg"),
-  "3Bastos": require("../../assets/cartas/3Bastos.jpeg"),
+  "1Bastos": require("../../assets/cartas/1Bastos.png"),
+  "2Bastos": require("../../assets/cartas/2Bastos.png"),
+  "3Bastos": require("../../assets/cartas/3Bastos.png"),
   "4Bastos": require("../../assets/cartas/4Bastos.jpeg"),
   "5Bastos": require("../../assets/cartas/5Bastos.jpeg"),
   "6Bastos": require("../../assets/cartas/6Bastos.jpeg"),
   "7Bastos": require("../../assets/cartas/7Bastos.jpeg"),
-  "10Bastos": require("../../assets/cartas/10Bastos.jpeg"),
+  "10Bastos": require("../../assets/cartas/10Bastos.png"),
   "11Bastos": require("../../assets/cartas/11Bastos.png"),
   "12Bastos": require("../../assets/cartas/12Bastos.png"),
   // Copas
-  "1Copas": require("../../assets/cartas/1Copas.jpeg"),
-  "2Copas": require("../../assets/cartas/2Copas.jpeg"),
-  "3Copas": require("../../assets/cartas/3Copas.jpeg"),
+  "1Copas": require("../../assets/cartas/1Copas.png"),
+  "2Copas": require("../../assets/cartas/2Copas.png"),
+  "3Copas": require("../../assets/cartas/3Copas.png"),
   "4Copas": require("../../assets/cartas/4Copas.jpeg"),
   "5Copas": require("../../assets/cartas/5Copas.jpeg"),
   "6Copas": require("../../assets/cartas/6Copas.jpeg"),
   "7Copas": require("../../assets/cartas/7Copas.jpeg"),
-  "10Copas": require("../../assets/cartas/10Copas.jpeg"),
+  "10Copas": require("../../assets/cartas/10Copas.png"),
   "11Copas": require("../../assets/cartas/11Copas.png"),
   "12Copas": require("../../assets/cartas/12Copas.png"),
   // Espadas
-  "1Espadas": require("../../assets/cartas/1Espadas.jpeg"),
-  "2Espadas": require("../../assets/cartas/2Espadas.jpeg"),
-  "3Espadas": require("../../assets/cartas/3Espadas.jpeg"),
+  "1Espadas": require("../../assets/cartas/1Espadas.png"),
+  "2Espadas": require("../../assets/cartas/2Espadas.png"),
+  "3Espadas": require("../../assets/cartas/3Espadas.png"),
   "4Espadas": require("../../assets/cartas/4Espadas.jpeg"),
   "5Espadas": require("../../assets/cartas/5Espadas.jpeg"),
   "6Espadas": require("../../assets/cartas/6Espadas.jpeg"),
   "7Espadas": require("../../assets/cartas/7Espadas.jpeg"),
-  "10Espadas": require("../../assets/cartas/10Espadas.jpeg"),
+  "10Espadas": require("../../assets/cartas/10Espadas.png"),
   "11Espadas": require("../../assets/cartas/11Espadas.png"),
   "12Espadas": require("../../assets/cartas/12Espadas.png"),
   // Oros
-  "1Oros": require("../../assets/cartas/1Oros.jpeg"),
-  "2Oros": require("../../assets/cartas/2Oros.jpeg"),
-  "3Oros": require("../../assets/cartas/3Oros.jpeg"),
+  "1Oros": require("../../assets/cartas/1Oros.png"),
+  "2Oros": require("../../assets/cartas/2Oros.png"),
+  "3Oros": require("../../assets/cartas/3Oros.png"),
   "4Oros": require("../../assets/cartas/4Oros.jpeg"),
   "5Oros": require("../../assets/cartas/5Oros.jpeg"),
   "6Oros": require("../../assets/cartas/6Oros.jpeg"),
   "7Oros": require("../../assets/cartas/7Oros.jpeg"),
-  "10Oros": require("../../assets/cartas/10Oros.jpeg"),
+  "10Oros": require("../../assets/cartas/10Oros.png"),
   "11Oros": require("../../assets/cartas/11Oros.png"),
   "12Oros": require("../../assets/cartas/12Oros.png"),
 };
@@ -96,6 +96,8 @@ export default function GameScreen({ navigation, route }) {
   const [loserIndex, setLoserIndex] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialFadeAnim = useState(new Animated.Value(0))[0];
+  // Confirm finish popup
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   // (Torombolo moved to its own screen)
 
@@ -167,6 +169,17 @@ export default function GameScreen({ navigation, route }) {
     const alcanzaron = counts
       .map((c, i) => (c >= limit ? i : null))
       .filter((i) => i !== null);
+    // Si la baraja se queda sin cartas, determinar perdedor por menor cantidad
+    if (deck.length === 0) {
+      const min = Math.min(...counts);
+      const losers = counts
+        .map((count, idx) => ({ count, idx }))
+        .filter((obj) => obj.count === min);
+      setLoserIndex(losers[0].idx);
+      setGameOver(true);
+      setFinalCounts(counts);
+      return;
+    }
     if (alcanzaron.length === 0) return;
     // Lógica de perdedor: el que menos cartas tiene
     const min = Math.min(...counts);
@@ -258,12 +271,16 @@ export default function GameScreen({ navigation, route }) {
   );
 
   return (
-    <ImageBackground source={TAPETE} style={styles.container}>
-      {!revealedCard && (
+    <ImageBackground
+      source={TAPETE}
+      style={[styles.container, { width: "100%", height: "100%" }]}
+      imageStyle={{ resizeMode: "cover", width: "100%", height: "100%" }}
+    >
+      {!revealedCard && !gameOver && !showFinishConfirm && (
         <>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.navigate("Menu")}
+            onPress={() => setShowFinishConfirm(true)}
           >
             <Text style={styles.backButtonText}>Finalizar juego</Text>
           </TouchableOpacity>
@@ -274,6 +291,40 @@ export default function GameScreen({ navigation, route }) {
             <Text style={styles.tutorialBtnText}>?</Text>
           </TouchableOpacity>
         </>
+      )}
+      {/* Popup de confirmación para finalizar partida */}
+      {showFinishConfirm && (
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmTitle}>Finalizar partida?</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                marginTop: 18,
+              }}
+            >
+              <TouchableOpacity
+                style={[styles.btn, { marginHorizontal: 8 }]}
+                onPress={() => {
+                  setShowFinishConfirm(false);
+                  navigation.navigate("Menu");
+                }}
+              >
+                <Text style={styles.btnText}>Sí</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.btn,
+                  { marginHorizontal: 8, backgroundColor: "#555" },
+                ]}
+                onPress={() => setShowFinishConfirm(false)}
+              >
+                <Text style={styles.btnText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
 
       {players.map((player, idx) =>
@@ -314,23 +365,47 @@ export default function GameScreen({ navigation, route }) {
       {/* Overlay de fin de partida */}
       {gameOver && finalCounts && (
         <View style={styles.endOverlay}>
-          <View style={styles.endContainer}>
+          <View
+            style={[
+              styles.endContainer,
+              { maxWidth: 400, width: "90%", alignSelf: "center", padding: 20 },
+            ]}
+          >
             <Text style={styles.endTitle}>Fin de la partida</Text>
-            <View style={styles.endPlayersList}>
+            <View
+              style={[styles.endPlayersList, { padding: 8, marginBottom: 16 }]}
+            >
               {players.map((p, i) => (
-                <View key={i} style={styles.endPlayerRow}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  key={i}
+                  style={[styles.endPlayerRow, { paddingVertical: 8 }]}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     <Image
                       source={
                         p?.imagen || require("../../assets/moustache/ale.png")
                       }
-                      style={styles.endPlayerAvatar}
+                      style={[
+                        styles.endPlayerAvatar,
+                        {
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          marginRight: 10,
+                        },
+                      ]}
                     />
                     <View style={styles.endPlayerInfo}>
-                      <Text style={styles.endPlayerName}>
+                      <Text style={[styles.endPlayerName, { fontSize: 14 }]}>
                         {p ? p.nombre : `Jugador ${i + 1}`}
                       </Text>
-                      <Text style={styles.endPlayerCards}>
+                      <Text style={[styles.endPlayerCards, { fontSize: 12 }]}>
                         {finalCounts[i]} cartas
                       </Text>
                     </View>
@@ -341,6 +416,7 @@ export default function GameScreen({ navigation, route }) {
                         color: "#FF6B35",
                         fontWeight: "bold",
                         marginLeft: 8,
+                        fontSize: 14,
                       }}
                     >
                       👎 Perdedor
@@ -350,10 +426,10 @@ export default function GameScreen({ navigation, route }) {
               ))}
             </View>
             <TouchableOpacity
-              style={styles.endButton}
+              style={[styles.btn, { marginTop: 8, alignSelf: "center" }]}
               onPress={() => navigation.navigate("Torombolo", { loserIndex })}
             >
-              <Text style={styles.endButtonText}>Torombolo</Text>
+              <Text style={styles.btnText}>Torombolo</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -380,7 +456,7 @@ export default function GameScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60 },
+  container: { flex: 1 },
   tutorialBtn: {
     position: "absolute",
     top: 56,
@@ -553,25 +629,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 4,
   },
-  endButton: {
-    backgroundColor: "#2980b9",
-    paddingHorizontal: 26,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "rgba(0,0,0,0.4)",
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.6,
-    shadowRadius: 1,
-    elevation: 5,
-  },
-  endButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
+  // ...estilos de endButton eliminados, se usa styles.btn y styles.btnText
   tOverlay: {
     position: "absolute",
     top: 0,

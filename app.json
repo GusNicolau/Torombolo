@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/tapete/Tapete1.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.sherco2008.torombolo"
     },
     "web": {
       "output": "static",
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f5b152d0-add9-4c95-999a-133c08351d06"
+      }
     }
   }
 }

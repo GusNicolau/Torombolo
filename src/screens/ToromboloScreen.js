@@ -13,44 +13,44 @@ import { usePlayers } from "../context/PlayersContext";
 // dimensions available if needed
 
 const CARTAS = {
-  "1Bastos": require("../../assets/cartas/1Bastos.jpeg"),
-  "2Bastos": require("../../assets/cartas/2Bastos.jpeg"),
-  "3Bastos": require("../../assets/cartas/3Bastos.jpeg"),
+  "1Bastos": require("../../assets/cartas/1Bastos.png"),
+  "2Bastos": require("../../assets/cartas/2Bastos.png"),
+  "3Bastos": require("../../assets/cartas/3Bastos.png"),
   "4Bastos": require("../../assets/cartas/4Bastos.jpeg"),
   "5Bastos": require("../../assets/cartas/5Bastos.jpeg"),
   "6Bastos": require("../../assets/cartas/6Bastos.jpeg"),
   "7Bastos": require("../../assets/cartas/7Bastos.jpeg"),
-  "10Bastos": require("../../assets/cartas/10Bastos.jpeg"),
+  "10Bastos": require("../../assets/cartas/10Bastos.png"),
   "11Bastos": require("../../assets/cartas/11Bastos.png"),
   "12Bastos": require("../../assets/cartas/12Bastos.png"),
-  "1Copas": require("../../assets/cartas/1Copas.jpeg"),
-  "2Copas": require("../../assets/cartas/2Copas.jpeg"),
-  "3Copas": require("../../assets/cartas/3Copas.jpeg"),
+  "1Copas": require("../../assets/cartas/1Copas.png"),
+  "2Copas": require("../../assets/cartas/2Copas.png"),
+  "3Copas": require("../../assets/cartas/3Copas.png"),
   "4Copas": require("../../assets/cartas/4Copas.jpeg"),
   "5Copas": require("../../assets/cartas/5Copas.jpeg"),
   "6Copas": require("../../assets/cartas/6Copas.jpeg"),
   "7Copas": require("../../assets/cartas/7Copas.jpeg"),
-  "10Copas": require("../../assets/cartas/10Copas.jpeg"),
+  "10Copas": require("../../assets/cartas/10Copas.png"),
   "11Copas": require("../../assets/cartas/11Copas.png"),
   "12Copas": require("../../assets/cartas/12Copas.png"),
-  "1Espadas": require("../../assets/cartas/1Espadas.jpeg"),
-  "2Espadas": require("../../assets/cartas/2Espadas.jpeg"),
-  "3Espadas": require("../../assets/cartas/3Espadas.jpeg"),
+  "1Espadas": require("../../assets/cartas/1Espadas.png"),
+  "2Espadas": require("../../assets/cartas/2Espadas.png"),
+  "3Espadas": require("../../assets/cartas/3Espadas.png"),
   "4Espadas": require("../../assets/cartas/4Espadas.jpeg"),
   "5Espadas": require("../../assets/cartas/5Espadas.jpeg"),
   "6Espadas": require("../../assets/cartas/6Espadas.jpeg"),
   "7Espadas": require("../../assets/cartas/7Espadas.jpeg"),
-  "10Espadas": require("../../assets/cartas/10Espadas.jpeg"),
+  "10Espadas": require("../../assets/cartas/10Espadas.png"),
   "11Espadas": require("../../assets/cartas/11Espadas.png"),
   "12Espadas": require("../../assets/cartas/12Espadas.png"),
-  "1Oros": require("../../assets/cartas/1Oros.jpeg"),
-  "2Oros": require("../../assets/cartas/2Oros.jpeg"),
-  "3Oros": require("../../assets/cartas/3Oros.jpeg"),
+  "1Oros": require("../../assets/cartas/1Oros.png"),
+  "2Oros": require("../../assets/cartas/2Oros.png"),
+  "3Oros": require("../../assets/cartas/3Oros.png"),
   "4Oros": require("../../assets/cartas/4Oros.jpeg"),
   "5Oros": require("../../assets/cartas/5Oros.jpeg"),
   "6Oros": require("../../assets/cartas/6Oros.jpeg"),
   "7Oros": require("../../assets/cartas/7Oros.jpeg"),
-  "10Oros": require("../../assets/cartas/10Oros.jpeg"),
+  "10Oros": require("../../assets/cartas/10Oros.png"),
   "11Oros": require("../../assets/cartas/11Oros.png"),
   "12Oros": require("../../assets/cartas/12Oros.png"),
 };
@@ -109,15 +109,32 @@ export default function ToromboloScreen({ navigation, route }) {
   const [tTotalPassed, setTTotalPassed] = useState(0);
   const [tFinished, setTFinished] = useState(false);
   const [tRevealedCount, setTRevealedCount] = useState(0);
+  const [extraRoundAllowed, setExtraRoundAllowed] = useState(false);
+  const [extraRoundUsed, setExtraRoundUsed] = useState(false);
 
-  // Draw a card from tDeck; if empty, reshuffle
+  // Draw a card from tDeck; if empty, allow only one extra round if permitted
   const drawTCard = () => {
-    let local = tDeck;
-    if (!local || local.length === 0) {
-      local = crearBaraja();
+    let card;
+    if (!tDeck || tDeck.length === 0) {
+      if (!extraRoundAllowed || extraRoundUsed) {
+        setTFinished(true);
+        return null;
+      }
+      setExtraRoundUsed(true);
+      const palo = PALOS[Math.floor(Math.random() * PALOS.length)];
+      const valores = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
+      const valor = valores[Math.floor(Math.random() * valores.length)];
+      const key = `${valor}${palo}`;
+      card = {
+        valor,
+        palo,
+        tipo: valor <= 7 ? "numero" : "figura",
+        imagen: CARTAS[key],
+      };
+    } else {
+      card = tDeck[0];
+      setTDeck(tDeck.slice(1));
     }
-    const card = local[0];
-    setTDeck(local.slice(1));
     setTCards((prev) => [card, ...prev].slice(0, 5));
     setTRevealedCount((n) => n + 1);
 
@@ -165,7 +182,7 @@ export default function ToromboloScreen({ navigation, route }) {
         duration: 300,
         useNativeDriver: true,
       }),
-      Animated.delay(1400),
+      // Animated.delay(1400),
       Animated.timing(bebidaFadeAnim, {
         toValue: 0,
         duration: 300,
@@ -175,15 +192,20 @@ export default function ToromboloScreen({ navigation, route }) {
   };
 
   const handleParImpar = (choice) => {
+    // Si quedan 1 carta en el mazo, y acierta, permitir extraRound
+    if (tDeck.length === 1) setExtraRoundAllowed(false);
     const card = drawTCard();
     if (!card) return;
     const isPar = card.valor % 2 === 0;
     const guessedPar = choice === "par";
     if (isPar === guessedPar) {
+      // Si justo hemos acertado la carta 40, permitir extraRound
+      if (tDeck.length === 0) setExtraRoundAllowed(true);
       setTStep(2);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
     } else {
+      setExtraRoundAllowed(false); // Si fallas la 40, no hay extra
       fail(card);
     }
   };
@@ -203,10 +225,12 @@ export default function ToromboloScreen({ navigation, route }) {
     else ok = card.valor === prev.valor;
 
     if (ok) {
+      if (tDeck.length === 0 && extraRoundAllowed) setExtraRoundAllowed(true);
       setTStep(3);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
     } else {
+      setExtraRoundAllowed(false);
       fail(card);
     }
   };
@@ -228,10 +252,12 @@ export default function ToromboloScreen({ navigation, route }) {
     else ok = card.valor === a.valor || card.valor === b.valor;
 
     if (ok) {
+      if (tDeck.length === 0 && extraRoundAllowed) setExtraRoundAllowed(true);
       setTStep(4);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
     } else {
+      setExtraRoundAllowed(false);
       fail(card);
     }
   };
@@ -246,7 +272,6 @@ export default function ToromboloScreen({ navigation, route }) {
       const n = jugadores.length || 3;
       if (card.valor === 1) {
         const next = (currentPlayerIndex + 1) % n; // pasa a la derecha
-        // Animar el cambio de jugador sin mensaje
         playerChangeAnim.setValue(0);
         Animated.sequence([
           Animated.timing(playerChangeAnim, {
@@ -254,7 +279,6 @@ export default function ToromboloScreen({ navigation, route }) {
             duration: 300,
             useNativeDriver: true,
           }),
-          Animated.delay(800),
           Animated.timing(playerChangeAnim, {
             toValue: 0,
             duration: 300,
@@ -267,7 +291,6 @@ export default function ToromboloScreen({ navigation, route }) {
         setTSuccesses([]);
       } else if (card.valor === 12) {
         const prev = (currentPlayerIndex - 1 + n) % n; // pasa a la izquierda
-        // Animar el cambio de jugador sin mensaje
         playerChangeAnim.setValue(0);
         Animated.sequence([
           Animated.timing(playerChangeAnim, {
@@ -275,7 +298,6 @@ export default function ToromboloScreen({ navigation, route }) {
             duration: 300,
             useNativeDriver: true,
           }),
-          Animated.delay(800),
           Animated.timing(playerChangeAnim, {
             toValue: 0,
             duration: 300,
@@ -290,6 +312,7 @@ export default function ToromboloScreen({ navigation, route }) {
         setTFinished(true);
       }
     } else {
+      setExtraRoundAllowed(false);
       fail(card);
     }
   };
@@ -326,15 +349,26 @@ export default function ToromboloScreen({ navigation, route }) {
           </View>
         </View>
       </View>
-      <View style={styles.actionButtonsRow}>
+      <View
+        style={[
+          styles.actionButtonsRow,
+          {
+            marginTop: 0,
+            marginBottom: 0,
+            paddingTop: 0,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <TouchableOpacity
-          style={styles.finalizarBtn}
+          style={styles.btn}
           onPress={() => navigation.navigate("Menu")}
         >
-          <Text style={styles.finalizarBtnText}>Finalizar partida</Text>
+          <Text style={styles.btnText}>Finalizar partida</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.tutorialBtn}
+          style={styles.btn}
           onPress={() => {
             setShowTutorial(true);
             tutorialFadeAnim.setValue(0);
@@ -345,7 +379,9 @@ export default function ToromboloScreen({ navigation, route }) {
             }).start();
           }}
         >
-          <Text style={styles.tutorialBtnText}>?</Text>
+          <Text style={[styles.btnText, { fontSize: 28, fontWeight: "bold" }]}>
+            ?
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -357,7 +393,16 @@ export default function ToromboloScreen({ navigation, route }) {
         </ScrollView>
       </View>
 
-      <View style={styles.tTableArea}>
+      <View
+        style={[
+          styles.tTableArea,
+          {
+            alignItems: "center",
+            justifyContent: "center",
+            paddingBottom: 120,
+          },
+        ]}
+      >
         <View style={styles.tDiscardPile} pointerEvents="none">
           {tDiscarded.map((c) => (
             <Image
@@ -563,6 +608,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 32, // Lower the header (avatar + title)
   },
   playerIcon: {
     width: 100,
@@ -570,6 +616,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 2,
     borderColor: "#fff",
+    marginTop: 8, // Lower the avatar slightly
   },
   title: { color: "#fff", fontSize: 38, fontWeight: "700" },
   subtitle: { color: "#ddd", fontSize: 18, marginTop: 4, fontWeight: "600" },
@@ -641,48 +688,62 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   btn: {
-    backgroundColor: "#FF6B35",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    margin: 6,
-    borderRadius: 2,
-    minWidth: 100,
+    backgroundColor: "#222",
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#000",
-    shadowColor: "#000",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    margin: 6,
+    minWidth: 100,
   },
   btnText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-    textTransform: "uppercase",
+    fontSize: 17,
+    fontWeight: "900",
     letterSpacing: 1,
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    textTransform: "uppercase",
   },
   finishBtn: {
-    backgroundColor: "#FF1744",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: "#222",
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
     marginTop: 16,
-    borderRadius: 2,
-    borderWidth: 3,
-    borderColor: "#000",
-    shadowColor: "#000",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 8,
   },
   finishBtnText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-    textTransform: "uppercase",
+    fontSize: 17,
+    fontWeight: "900",
     letterSpacing: 1,
+    fontFamily: "monospace",
+    textShadowColor: "#000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    textTransform: "uppercase",
+  },
+  disabledButton: {
+    backgroundColor: "#7f8c8d",
+    borderColor: "#ffffff",
+    opacity: 0.5,
   },
   stats: { color: "#fff" },
   backBtn: {
@@ -772,8 +833,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bebidaImage: {
-    width: 100,
-    height: 150,
+    width: 180,
+    height: 220,
     resizeMode: "contain",
   },
   bebidaText: {
