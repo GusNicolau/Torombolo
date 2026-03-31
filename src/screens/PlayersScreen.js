@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { usePlayers } from "../context/PlayersContext";
-const TAPETE = require("../../assets/tapete/Tapete2.png");
+const FONDO = require("../../assets/images/Inicio.png");
 // Avatares por defecto disponibles
 const AVATARES = [
   require("../../assets/moustache/ale.png"),
@@ -21,6 +21,10 @@ const AVATARES = [
   require("../../assets/moustache/dani.png"),
   require("../../assets/moustache/gustavo.png"),
   require("../../assets/moustache/mario.png"),
+  require("../../assets/moustache/lara.png"),
+  require("../../assets/avatares/Avatar1.png"),
+  require("../../assets/avatares/Avatar2.png"),
+  require("../../assets/avatares/Avatar3.png"),
 ];
 
 export default function PlayersScreen({ navigation }) {
@@ -159,7 +163,7 @@ export default function PlayersScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={TAPETE}
+      source={FONDO}
       style={styles.bg}
       imageStyle={{ resizeMode: "cover" }}
     >

@@ -10,27 +10,38 @@ import {
 } from "react-native";
 
 import { usePlayers } from "../context/PlayersContext";
-const TAPETE = require("../../assets/tapete/Tapete2.png");
+const FONDO = require("../../assets/images/Inicio.png");
 
-const amigos = [
-  { nombre: "Gustavo", imagen: require("../../assets/moustache/gustavo.png") },
-  { nombre: "Carlos", imagen: require("../../assets/moustache/carlos.png") },
-  { nombre: "Andreu", imagen: require("../../assets/moustache/andreu.png") },
-  { nombre: "Mario", imagen: require("../../assets/moustache/mario.png") },
-  { nombre: "Dani", imagen: require("../../assets/moustache/dani.png") },
-  { nombre: "Ale", imagen: require("../../assets/moustache/ale.png") },
+const moustacheAmigas = [
+  { nombre: "Sherco", imagen: require("../../assets/moustache/gustavo.png") },
+  { nombre: "Carlota", imagen: require("../../assets/moustache/carlos.png") },
+  { nombre: "Toffe", imagen: require("../../assets/moustache/andreu.png") },
+  { nombre: "Mariojt72", imagen: require("../../assets/moustache/mario.png") },
+  { nombre: "Calent", imagen: require("../../assets/moustache/dani.png") },
+  { nombre: "Amerla", imagen: require("../../assets/moustache/ale.png") },
+  { nombre: "Cigrona", imagen: require("../../assets/moustache/lara.png") },
+];
+
+const avatares = [
+  { nombre: "Avatar 1", imagen: require("../../assets/avatares/Avatar1.png") },
+  { nombre: "Avatar 2", imagen: require("../../assets/avatares/Avatar2.png") },
+  { nombre: "Avatar 3", imagen: require("../../assets/avatares/Avatar3.png") },
 ];
 
 export default function MoustacheScreen({ navigation }) {
   const { addJugador, getAllPlayers } = usePlayers();
   const [seleccionados, setSeleccionados] = useState([]);
   const [maxAlertShown, setMaxAlertShown] = useState(false);
+  const [tabActivo, setTabActivo] = useState("avatares"); // "moustache" o "avatares"
 
   const allPlayers = getAllPlayers() || [];
   const jugadoresCount = allPlayers.length;
   const totalSeleccionados = jugadoresCount + seleccionados.length;
   const maxReached = totalSeleccionados >= 4;
-  const disponibles = amigos.filter(
+
+  const avataresMostrados =
+    tabActivo === "avatares" ? avatares : moustacheAmigas;
+  const disponibles = avataresMostrados.filter(
     (a) => !allPlayers.some((j) => j && j.nombre === a.nombre),
   );
 
@@ -66,8 +77,8 @@ export default function MoustacheScreen({ navigation }) {
       return;
     }
     seleccionados.forEach((nombre) => {
-      const amigo = amigos.find((a) => a.nombre === nombre);
-      addJugador({ nombre, imagen: amigo?.imagen ?? null });
+      const seleccionado = avataresMostrados.find((a) => a.nombre === nombre);
+      addJugador({ nombre, imagen: seleccionado?.imagen ?? null });
     });
     navigation.goBack();
     setMaxAlertShown(false);
@@ -75,7 +86,7 @@ export default function MoustacheScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={TAPETE}
+      source={FONDO}
       style={{ flex: 1, width: "100%", height: "100%" }}
       imageStyle={{ resizeMode: "cover" }}
     >
@@ -89,6 +100,32 @@ export default function MoustacheScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.title}>Selecciona tus jugadores</Text>
+
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity
+              style={[styles.tab, tabActivo === "avatares" && styles.tabActive]}
+              onPress={() => {
+                setTabActivo("avatares");
+                setSeleccionados([]);
+              }}
+            >
+              <Text style={styles.tabText}>Avatares</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                tabActivo === "moustache" && styles.tabActive,
+              ]}
+              onPress={() => {
+                setTabActivo("moustache");
+                setSeleccionados([]);
+              }}
+            >
+              <Text style={styles.tabText}>Moustache</Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.counter}>
             Jugadores actuales: {jugadoresCount + seleccionados.length}/4
           </Text>
@@ -161,7 +198,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingTop: 160,
+    paddingTop: 120,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 16,
+    marginTop: 12,
+  },
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#333",
+    borderWidth: 2,
+    borderColor: "#666",
+  },
+  tabActive: {
+    backgroundColor: "#222",
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.7,
+    shadowRadius: 2,
+  },
+  tabText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+    fontFamily: "monospace",
+    letterSpacing: 0.5,
   },
   backButton: {
     position: "absolute",
@@ -194,7 +261,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#ffffff",
     textAlign: "center",
-    marginBottom: 20,
+    marginTop: 40,
   },
   grid: { justifyContent: "center" },
   cardContainer: {

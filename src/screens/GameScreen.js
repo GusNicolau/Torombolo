@@ -11,16 +11,17 @@ import {
   View,
 } from "react-native";
 import { usePlayers } from "../context/PlayersContext";
+import { playSound } from "../soundManager";
 
 const CARTAS = {
   // Bastos
   "1Bastos": require("../../assets/cartas/1Bastos.png"),
   "2Bastos": require("../../assets/cartas/2Bastos.png"),
   "3Bastos": require("../../assets/cartas/3Bastos.png"),
-  "4Bastos": require("../../assets/cartas/4Bastos.jpeg"),
-  "5Bastos": require("../../assets/cartas/5Bastos.jpeg"),
-  "6Bastos": require("../../assets/cartas/6Bastos.jpeg"),
-  "7Bastos": require("../../assets/cartas/7Bastos.jpeg"),
+  "4Bastos": require("../../assets/cartas/4Bastos.png"),
+  "5Bastos": require("../../assets/cartas/5Bastos.png"),
+  "6Bastos": require("../../assets/cartas/6Bastos.png"),
+  "7Bastos": require("../../assets/cartas/7Bastos.png"),
   "10Bastos": require("../../assets/cartas/10Bastos.png"),
   "11Bastos": require("../../assets/cartas/11Bastos.png"),
   "12Bastos": require("../../assets/cartas/12Bastos.png"),
@@ -28,10 +29,10 @@ const CARTAS = {
   "1Copas": require("../../assets/cartas/1Copas.png"),
   "2Copas": require("../../assets/cartas/2Copas.png"),
   "3Copas": require("../../assets/cartas/3Copas.png"),
-  "4Copas": require("../../assets/cartas/4Copas.jpeg"),
-  "5Copas": require("../../assets/cartas/5Copas.jpeg"),
-  "6Copas": require("../../assets/cartas/6Copas.jpeg"),
-  "7Copas": require("../../assets/cartas/7Copas.jpeg"),
+  "4Copas": require("../../assets/cartas/4Copas.png"),
+  "5Copas": require("../../assets/cartas/5Copas.png"),
+  "6Copas": require("../../assets/cartas/6Copas.png"),
+  "7Copas": require("../../assets/cartas/7Copas.png"),
   "10Copas": require("../../assets/cartas/10Copas.png"),
   "11Copas": require("../../assets/cartas/11Copas.png"),
   "12Copas": require("../../assets/cartas/12Copas.png"),
@@ -39,10 +40,10 @@ const CARTAS = {
   "1Espadas": require("../../assets/cartas/1Espadas.png"),
   "2Espadas": require("../../assets/cartas/2Espadas.png"),
   "3Espadas": require("../../assets/cartas/3Espadas.png"),
-  "4Espadas": require("../../assets/cartas/4Espadas.jpeg"),
-  "5Espadas": require("../../assets/cartas/5Espadas.jpeg"),
-  "6Espadas": require("../../assets/cartas/6Espadas.jpeg"),
-  "7Espadas": require("../../assets/cartas/7Espadas.jpeg"),
+  "4Espadas": require("../../assets/cartas/4Espadas.png"),
+  "5Espadas": require("../../assets/cartas/5Espadas.png"),
+  "6Espadas": require("../../assets/cartas/6Espadas.png"),
+  "7Espadas": require("../../assets/cartas/7Espadas.png"),
   "10Espadas": require("../../assets/cartas/10Espadas.png"),
   "11Espadas": require("../../assets/cartas/11Espadas.png"),
   "12Espadas": require("../../assets/cartas/12Espadas.png"),
@@ -50,10 +51,10 @@ const CARTAS = {
   "1Oros": require("../../assets/cartas/1Oros.png"),
   "2Oros": require("../../assets/cartas/2Oros.png"),
   "3Oros": require("../../assets/cartas/3Oros.png"),
-  "4Oros": require("../../assets/cartas/4Oros.jpeg"),
-  "5Oros": require("../../assets/cartas/5Oros.jpeg"),
-  "6Oros": require("../../assets/cartas/6Oros.jpeg"),
-  "7Oros": require("../../assets/cartas/7Oros.jpeg"),
+  "4Oros": require("../../assets/cartas/4Oros.png"),
+  "5Oros": require("../../assets/cartas/5Oros.png"),
+  "6Oros": require("../../assets/cartas/6Oros.png"),
+  "7Oros": require("../../assets/cartas/7Oros.png"),
   "10Oros": require("../../assets/cartas/10Oros.png"),
   "11Oros": require("../../assets/cartas/11Oros.png"),
   "12Oros": require("../../assets/cartas/12Oros.png"),
@@ -107,6 +108,7 @@ export default function GameScreen({ navigation, route }) {
     const card = deck[0];
     setDeck(deck.slice(1));
     setRevealedCard(card);
+    playSound("carta");
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.1,
@@ -157,6 +159,9 @@ export default function GameScreen({ navigation, route }) {
     const newPlayerCards = playerCards.map((arr, i) =>
       i === playerIndex ? [...arr, revealedCard] : arr,
     );
+    if (revealedCard.valor === 1) {
+      playSound("toast");
+    }
     setPlayerCards(newPlayerCards);
     checkFinalPhase(newPlayerCards);
     setRevealedCard(null);
@@ -327,14 +332,16 @@ export default function GameScreen({ navigation, route }) {
         </View>
       )}
 
-      {players.map((player, idx) =>
-        renderPlayer(
-          player,
-          playerCards[idx],
-          playerPositions[idx] || {},
-          playerPositions[idx]?.rotate || "0deg",
-        ),
-      )}
+      {players.map((player, idx) => (
+        <View key={idx}>
+          {renderPlayer(
+            player,
+            playerCards[idx],
+            playerPositions[idx] || {},
+            playerPositions[idx]?.rotate || "0deg",
+          )}
+        </View>
+      ))}
 
       {/* Mazo / reverso */}
       <View style={[styles.deckWrapper]}>
