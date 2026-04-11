@@ -1,4 +1,4 @@
-import { Audio, Sound } from "expo-video";
+import { Audio } from "expo-av";
 
 let backgroundSound = null;
 
@@ -27,11 +27,16 @@ export const playSound = async (soundName) => {
       return;
     }
 
-    const sound = new Sound();
+    const { sound } = await Audio.Sound.createAsync(soundFiles[soundName]);
     try {
-      await sound.loadAsync(soundFiles[soundName]);
       await sound.playAsync();
       console.log(`Playing sound: ${soundName}`);
+      // Auto-unload after playing
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
     } catch (error) {
       console.warn(`Error playing ${soundName}:`, error.message);
       await sound.unloadAsync();
@@ -52,9 +57,10 @@ export const playBackgroundMusic = async () => {
       }
     }
 
-    const sound = new Sound();
+    const { sound } = await Audio.Sound.createAsync(
+      require("../assets/audio/mandolina.mp3"),
+    );
     try {
-      await sound.loadAsync(require("../assets/audio/mandolina.mp3"));
       await sound.setIsLoopingAsync(true);
       await sound.playAsync();
       backgroundSound = sound;

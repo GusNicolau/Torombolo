@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import { usePlayers } from "../context/PlayersContext";
-const FONDO = require("../../assets/images/Inicio.png");
+const FONDO = require("../../assets/images/Inicio5.png");
 
 const moustacheAmigas = [
   { nombre: "Sherco", imagen: require("../../assets/moustache/gustavo.png") },

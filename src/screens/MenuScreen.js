@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 
-const FONDO = require("../../assets/images/Inicio.png");
+const FONDO = require("../../assets/images/Inicio5.png");
 const TITULO = require("../../assets/images/Titulo.png");
 
 export default function MenuScreen({ navigation }) {
@@ -61,9 +61,10 @@ const styles = StyleSheet.create({
     width: 480,
     height: 220,
     resizeMode: "contain",
-    marginTop: 0,
+    marginTop: -200,
   },
   button: {
+    top: 200,
     width: 260,
     paddingVertical: 16,
     backgroundColor: "#222",

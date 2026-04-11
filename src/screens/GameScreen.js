@@ -10,8 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DiceRoller from "../components/DiceRoller";
+import DiceSelectionPopup from "../components/DiceSelectionPopup";
 import { usePlayers } from "../context/PlayersContext";
-import { playSound } from "../soundManager";
 
 const CARTAS = {
   // Bastos
@@ -99,6 +100,11 @@ export default function GameScreen({ navigation, route }) {
   const tutorialFadeAnim = useState(new Animated.Value(0))[0];
   // Confirm finish popup
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  // Dice state para el 1
+  const [showDiceSelection, setShowDiceSelection] = useState(false);
+  const [showDiceRoller, setShowDiceRoller] = useState(false);
+  const [diceSelectedChoice, setDiceSelectedChoice] = useState(null);
+  const [pendingCard, setPendingCard] = useState(null);
 
   // (Torombolo moved to its own screen)
 
@@ -108,7 +114,6 @@ export default function GameScreen({ navigation, route }) {
     const card = deck[0];
     setDeck(deck.slice(1));
     setRevealedCard(card);
-    playSound("carta");
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.1,
@@ -125,17 +130,14 @@ export default function GameScreen({ navigation, route }) {
 
   // Decide a qué jugador se asigna la carta
   function getPlayerIndex(card) {
+    if (card.valor === 1) {
+      // El 1 requiere el dado
+      return -2; // Código especial para indicar que se necesita el dado
+    }
+
     if (numPlayers === 3) {
       if (card.tipo === "numero") {
-        if (card.valor === 1) {
-          // Jugador con menos cartas
-          const cardCounts = playerCards.map((c) => c.length);
-          const minCount = Math.min(...cardCounts);
-          const candidatos = cardCounts
-            .map((count, i) => (count === minCount ? i : null))
-            .filter((i) => i !== null);
-          return candidatos[Math.floor(Math.random() * candidatos.length)];
-        } else if (card.valor >= 2 && card.valor <= 4) {
+        if (card.valor >= 2 && card.valor <= 4) {
           return 0;
         } else if (card.valor >= 5 && card.valor <= 7) {
           return 1;
@@ -151,17 +153,61 @@ export default function GameScreen({ navigation, route }) {
     }
   }
 
+  // Función para determinar ganador del 1 basado en el dado
+  function determineWinnerOf1(diceResult, selectedChoice) {
+    const isEven = diceResult % 2 === 0;
+    const playerWins =
+      (selectedChoice === "pares" && isEven) ||
+      (selectedChoice === "impares" && !isEven);
+
+    if (numPlayers === 3) {
+      // En el juego de 3 jugadores, determinar quién hizo la predicción
+      // Asumimos que el jugador actual es quien hace la predicción
+      // pero en un juego real, deberías tener un turno definido
+      if (playerWins) {
+        // El jugador que eligió correctamente se queda el 1
+        // Por ahora, asignamos al jugador con menos cartas (el que predijo)
+        const cardCounts = playerCards.map((c) => c.length);
+        const minCount = Math.min(...cardCounts);
+        const candidatos = cardCounts
+          .map((count, i) => (count === minCount ? i : null))
+          .filter((i) => i !== null);
+        return candidatos[0];
+      } else {
+        // El jugador que no eligió correctamente
+        // asignamos al segundo jugador con menos cartas
+        const cardCounts = playerCards.map((c) => c.length);
+        const sorted = cardCounts
+          .map((count, i) => ({ count, i }))
+          .sort((a, b) => a.count - b.count);
+        return sorted.length > 1 ? sorted[1].i : sorted[0].i;
+      }
+    } else {
+      // 4 jugadores
+      if (playerWins) {
+        return Math.floor(Math.random() * 2); // Uno de los dos primeros
+      } else {
+        return Math.floor(Math.random() * 2) + 2; // Uno de los dos últimos
+      }
+    }
+  }
+
   const placeRevealedCard = () => {
     if (gameOver) return;
     if (!revealedCard) return;
+
+    // Si es un 1, mostrar el popup de selección
+    if (revealedCard.valor === 1) {
+      setPendingCard(revealedCard);
+      setShowDiceSelection(true);
+      return;
+    }
+
     const playerIndex = getPlayerIndex(revealedCard);
     if (playerIndex === -1) return;
     const newPlayerCards = playerCards.map((arr, i) =>
       i === playerIndex ? [...arr, revealedCard] : arr,
     );
-    if (revealedCard.valor === 1) {
-      playSound("toast");
-    }
     setPlayerCards(newPlayerCards);
     checkFinalPhase(newPlayerCards);
     setRevealedCard(null);
@@ -219,7 +265,48 @@ export default function GameScreen({ navigation, route }) {
     }).start(() => setShowTutorial(false));
   };
 
-  const tutorialContent = `Reglas del juego:\n\n• Cartas 1-7: Números\n  - 1: Va al jugador con menos cartas\n  - 2-4: Jugador izquierda\n  - 5-7: Jugador derecha\n\n• Cartas 10-12: Figuras\n  - Van al jugador derecha\n\n• El juego termina cuando un jugador alcanza el límite.\n\n• Si dos jugadores alcanzan el límite:\n  - El que tenga menos cartas pierde\n  - Si empatan, el límite sube +1`;
+  const handleDiceSelection = (choice) => {
+    setDiceSelectedChoice(choice);
+    // El dado se lanzará automáticamente después de seleccionar
+    setTimeout(() => {
+      setShowDiceSelection(false);
+      setShowDiceRoller(true);
+    }, 800);
+  };
+
+  // Determina el otro jugador que se enfrenta por el 1
+  const getOpponentIndex = () => {
+    const cardCounts = playerCards.map((c) => c.length);
+    const sorted = cardCounts
+      .map((count, i) => ({ count, i }))
+      .sort((a, b) => a.count - b.count);
+    // Retorna el segundo con menos cartas (contrincante del que eligió)
+    return sorted.length > 1
+      ? sorted[1].i
+      : sorted.length > 0
+        ? sorted[0].i
+        : 0;
+  };
+
+  const handleDiceRollComplete = (diceResult, selectedChoice) => {
+    if (!pendingCard) return;
+
+    // Determinar quién gana el 1
+    const winnerIndex = determineWinnerOf1(diceResult, selectedChoice);
+    const newPlayerCards = playerCards.map((arr, i) =>
+      i === winnerIndex ? [...arr, pendingCard] : arr,
+    );
+    setPlayerCards(newPlayerCards);
+    checkFinalPhase(newPlayerCards);
+
+    // Resetear todo
+    setRevealedCard(null);
+    setShowDiceRoller(false);
+    setDiceSelectedChoice(null);
+    setPendingCard(null);
+  };
+
+  const tutorialContent = `Reglas del juego:\n\n• Cartas 1-7: Números\n  - 1: ¡Especial! Se lanza un dado\n    • Elige PARES o IMPARES\n    • El que acierte se queda el 1\n  - 2-4: Jugador izquierda\n  - 5-7: Jugador derecha\n\n• Cartas 10-12: Figuras\n  - Van al jugador derecha\n\n• El juego termina cuando un jugador alcanza el límite.\n\n• Si dos jugadores alcanzan el límite:\n  - El que tenga menos cartas pierde\n  - Si empatan, el límite sube +1`;
 
   const { width, height } = Dimensions.get("window");
   // Posiciones para 3 y 4 jugadores
@@ -239,12 +326,13 @@ export default function GameScreen({ navigation, route }) {
 
   const renderPlayer = (player, cards, style, rotate = "0deg") => {
     if (!player) return null;
+    const rotateValue = typeof rotate === "string" ? rotate : "0deg";
     return (
       <View
         style={[
           styles.playerBox,
           style,
-          { transform: [{ rotate: style.rotate || "0deg" }] },
+          { transform: [{ rotate: rotateValue }] },
         ]}
       >
         <View style={styles.playerHeader}>
@@ -266,7 +354,7 @@ export default function GameScreen({ navigation, route }) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {cards.map((card, i) => (
           <Image
-            key={i}
+            key={`${card.palo}-${card.valor}-${i}`}
             source={card.imagen}
             style={[styles.cardImage, i !== 0 && { marginLeft: -35 }]}
           />
@@ -295,13 +383,25 @@ export default function GameScreen({ navigation, route }) {
           >
             <Text style={styles.tutorialBtnText}>?</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.backButton,
+              { top: 120, backgroundColor: "#FF6B35" },
+            ]}
+            onPress={() => {
+              setPendingCard({ valor: 1, palo: "test" });
+              setShowDiceSelection(true);
+            }}
+          >
+            <Text style={styles.backButtonText}>Test Dado</Text>
+          </TouchableOpacity>
         </>
       )}
       {/* Popup de confirmación para finalizar partida */}
       {showFinishConfirm && (
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmBox}>
-            <Text style={styles.confirmTitle}>Finalizar partida?</Text>
+        <View style={styles.endOverlay}>
+          <View style={styles.endContainer}>
+            <Text style={styles.endTitle}>¿Finalizar partida?</Text>
             <View
               style={{
                 flexDirection: "row",
@@ -333,7 +433,7 @@ export default function GameScreen({ navigation, route }) {
       )}
 
       {players.map((player, idx) => (
-        <View key={idx}>
+        <View key={player.id || idx}>
           {renderPlayer(
             player,
             playerCards[idx],
@@ -369,6 +469,30 @@ export default function GameScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
+      {/* Popup de selección pares/impares */}
+      <DiceSelectionPopup
+        visible={showDiceSelection}
+        player1={players[0]}
+        player2={players[getOpponentIndex()]}
+        playerImage1={players[0]?.imagen}
+        playerImage2={players[getOpponentIndex()]?.imagen}
+        onSelect={handleDiceSelection}
+      />
+
+      {/* Componente del dado */}
+      {showDiceRoller && (
+        <View style={styles.diceRollerOverlay}>
+          <DiceRoller
+            onRollComplete={handleDiceRollComplete}
+            selectedChoice={diceSelectedChoice}
+            player1={players[0]}
+            player2={players[getOpponentIndex()]}
+            image1={players[0]?.imagen}
+            image2={players[getOpponentIndex()]?.imagen}
+          />
+        </View>
+      )}
+
       {/* Overlay de fin de partida */}
       {gameOver && finalCounts && (
         <View style={styles.endOverlay}>
@@ -383,15 +507,12 @@ export default function GameScreen({ navigation, route }) {
               style={[styles.endPlayersList, { padding: 8, marginBottom: 16 }]}
             >
               {players.map((p, i) => (
-                <View
-                  key={i}
-                  style={[styles.endPlayerRow, { paddingVertical: 8 }]}
-                >
+                <View key={i} style={[styles.endPlayerRow]}>
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "center",
+                      flex: 1,
                     }}
                   >
                     <Image
@@ -418,16 +539,33 @@ export default function GameScreen({ navigation, route }) {
                     </View>
                   </View>
                   {i === loserIndex && (
-                    <Text
+                    <View
                       style={{
-                        color: "#FF6B35",
-                        fontWeight: "bold",
-                        marginLeft: 8,
-                        fontSize: 14,
+                        marginLeft: 10,
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      👎 Perdedor
-                    </Text>
+                      <Text
+                        style={{
+                          color: "#FF6B35",
+                          fontWeight: "bold",
+                          fontSize: 20,
+                        }}
+                      >
+                        👎
+                      </Text>
+                      <Text
+                        style={{
+                          color: "#FF6B35",
+                          fontWeight: "bold",
+                          fontSize: 11,
+                          marginTop: 2,
+                        }}
+                      >
+                        Perdedor
+                      </Text>
+                    </View>
                   )}
                 </View>
               ))}
@@ -579,40 +717,51 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.93)",
+    backgroundColor: "rgba(0,0,0,0.95)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
+    zIndex: 1000,
   },
   endContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(30,30,30,0.95)",
-    borderRadius: 16,
+    backgroundColor: "rgba(20,20,20,0.98)",
+    borderRadius: 20,
     padding: 32,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.2)",
-    maxWidth: "90%",
+    borderWidth: 3,
+    borderColor: "#FF6B35",
+    maxWidth: 420,
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 15,
   },
   endTitle: {
-    color: "#fff",
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 24,
+    color: "#FF6B35",
+    fontSize: 28,
+    fontWeight: "900",
+    marginBottom: 28,
     textAlign: "center",
+    letterSpacing: 1,
   },
   endPlayersList: {
     width: "100%",
-    marginBottom: 24,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    borderRadius: 10,
+    marginBottom: 28,
+    backgroundColor: "rgba(255,107,53,0.08)",
+    borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.3)",
   },
   endPlayerRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    borderBottomColor: "rgba(255,107,53,0.2)",
   },
   endPlayerAvatar: {
     width: 50,
@@ -729,5 +878,35 @@ const styles = StyleSheet.create({
     color: "#ddd",
     fontSize: 13,
     lineHeight: 20,
+  },
+  btn: {
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  btnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  diceRollerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
   },
 });

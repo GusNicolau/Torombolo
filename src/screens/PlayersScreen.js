@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { usePlayers } from "../context/PlayersContext";
-const FONDO = require("../../assets/images/Inicio.png");
+const FONDO = require("../../assets/images/Inicio5.png");
 // Avatares por defecto disponibles
 const AVATARES = [
   require("../../assets/moustache/ale.png"),

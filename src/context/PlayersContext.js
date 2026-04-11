@@ -7,6 +7,7 @@ const ROLES = {
   top: { id: "cartas2_4", name: "Cartas 2-4" },
   middle: { id: "cartas5_7", name: "Cartas 5-7" },
   bottom: { id: "figuras", name: "Figuras" },
+  left: { id: "cartasOros", name: "Cartas Oros" }, // Puedes cambiar el nombre/rol si lo deseas
 };
 
 export const PlayersProvider = ({ children }) => {
@@ -23,13 +24,15 @@ export const PlayersProvider = ({ children }) => {
       if (prev.some((j) => j.nombre === jugador.nombre)) return prev;
 
       // Asignar posición y rol automáticamente
+      let posicion = "top";
+      if (prev.length === 1) posicion = "middle";
+      else if (prev.length === 2) posicion = "bottom";
+      else if (prev.length === 3) posicion = "left";
+
       const newJugador = {
         ...jugador,
-        posicion:
-          prev.length === 0 ? "top" : prev.length === 1 ? "middle" : "bottom",
-        rol: getDefaultRole(
-          prev.length === 0 ? "top" : prev.length === 1 ? "middle" : "bottom",
-        ),
+        posicion,
+        rol: getDefaultRole(posicion),
       };
 
       return [...prev, newJugador];
@@ -39,13 +42,12 @@ export const PlayersProvider = ({ children }) => {
   const removeJugador = (nombre) => {
     setJugadores((prev) => {
       const filtered = prev.filter((j) => j.nombre !== nombre);
-      // Reasignar posiciones y roles
+      // Reasignar posiciones y roles para hasta 4 jugadores
+      const posiciones = ["top", "middle", "bottom", "left"];
       return filtered.map((j, idx) => ({
         ...j,
-        posicion: idx === 0 ? "top" : idx === 1 ? "middle" : "bottom",
-        rol: getDefaultRole(
-          idx === 0 ? "top" : idx === 1 ? "middle" : "bottom",
-        ),
+        posicion: posiciones[idx],
+        rol: getDefaultRole(posiciones[idx]),
       }));
     });
   };
@@ -59,7 +61,7 @@ export const PlayersProvider = ({ children }) => {
       if (jugadorIdx === -1) return prev;
 
       // Intercambiar posiciones si es necesario
-      const posicionMap = { top: 0, middle: 1, bottom: 2 };
+      const posicionMap = { top: 0, middle: 1, bottom: 2, left: 3 };
       const targetIdx = posicionMap[nuevaPosicion];
 
       if (targetIdx === undefined || targetIdx === jugadorIdx) return prev;
@@ -69,13 +71,12 @@ export const PlayersProvider = ({ children }) => {
         newArray[jugadorIdx],
       ];
 
-      // Reasignar posiciones y roles
+      // Reasignar posiciones y roles para hasta 4 jugadores
+      const posiciones = ["top", "middle", "bottom", "left"];
       return newArray.map((j, idx) => ({
         ...j,
-        posicion: idx === 0 ? "top" : idx === 1 ? "middle" : "bottom",
-        rol: getDefaultRole(
-          idx === 0 ? "top" : idx === 1 ? "middle" : "bottom",
-        ),
+        posicion: posiciones[idx],
+        rol: getDefaultRole(posiciones[idx]),
       }));
     });
   };
