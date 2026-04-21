@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -13,6 +13,13 @@ import {
 import DiceRoller from "../components/DiceRoller";
 import DiceSelectionPopup from "../components/DiceSelectionPopup";
 import { usePlayers } from "../context/PlayersContext";
+import { useSoundSettings } from "../context/SoundSettingsContext";
+import {
+  playBackgroundMusic,
+  playSound,
+  stopBackgroundMusic,
+  updateSoundSettings,
+} from "../soundManager";
 
 const CARTAS = {
   // Bastos
@@ -84,6 +91,7 @@ function crearBaraja() {
 
 export default function GameScreen({ navigation, route }) {
   const { jugadores } = usePlayers();
+  const { soundEnabled, sfxVolume, backgroundVolume } = useSoundSettings();
   const numPlayers = route?.params?.numPlayers || 3;
   const players = jugadores.slice(0, numPlayers);
 
@@ -106,6 +114,26 @@ export default function GameScreen({ navigation, route }) {
   const [diceSelectedChoice, setDiceSelectedChoice] = useState(null);
   const [pendingCard, setPendingCard] = useState(null);
 
+  // Update sound settings when context changes
+  useEffect(() => {
+    updateSoundSettings({
+      enabled: soundEnabled,
+      sfxVolume,
+      backgroundVolume,
+    });
+  }, [soundEnabled, sfxVolume, backgroundVolume]);
+
+  // Stop background music when game starts, resume when game ends
+  useEffect(() => {
+    // Stop background music immediately when entering game
+    stopBackgroundMusic();
+
+    // Cleanup: resume background music when leaving game
+    return () => {
+      playBackgroundMusic();
+    };
+  }, []);
+
   // (Torombolo moved to its own screen)
 
   const drawCard = () => {
@@ -114,6 +142,13 @@ export default function GameScreen({ navigation, route }) {
     const card = deck[0];
     setDeck(deck.slice(1));
     setRevealedCard(card);
+
+    // Play card sound immediately - don't wait
+    playSound("carta").catch((err) =>
+      console.warn("Card sound error:", err?.message),
+    );
+
+    // Start animation after sound playback
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.1,
@@ -198,6 +233,10 @@ export default function GameScreen({ navigation, route }) {
 
     // Si es un 1, mostrar el popup de selección
     if (revealedCard.valor === 1) {
+      // Play toast sound when 1 appears
+      playSound("toast").catch((err) =>
+        console.warn("Toast sound error:", err?.message),
+      );
       setPendingCard(revealedCard);
       setShowDiceSelection(true);
       return;

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Image, StyleSheet, Text, View } from "react-native";
 
 const DiceRoller = ({
@@ -9,15 +9,16 @@ const DiceRoller = ({
   image1,
   image2,
 }) => {
-  const diceValue = useRef(1);
-  const isRolling = useRef(true);
-  const rollDuration = useRef(0);
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [diceValue, setDiceValue] = useState(1);
+  const [isRolling, setIsRolling] = useState(true);
+  const rotateX = useRef(new Animated.Value(0)).current;
+  const rotateY = useRef(new Animated.Value(0)).current;
+  const rotateZ = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   // Determinar ganador
   const determineWinner = () => {
-    const isEven = diceValue.current % 2 === 0;
+    const isEven = diceValue % 2 === 0;
     if (selectedChoice === "pares") {
       return isEven ? "player1" : "player2";
     } else if (selectedChoice === "impares") {
@@ -27,60 +28,106 @@ const DiceRoller = ({
   };
 
   useEffect(() => {
-    // Animar la rotación
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 360,
-        duration: 100,
-        useNativeDriver: false,
-      }),
-    ).start();
+    let interval;
+    let rollTimeout;
 
-    // Simular que el dado está rodando y sale un número
-    const interval = setInterval(() => {
-      if (isRolling.current && rollDuration.current < 3000) {
-        diceValue.current = Math.floor(Math.random() * 6) + 1;
-        rollDuration.current += 50;
-      } else if (rollDuration.current >= 3000) {
-        isRolling.current = false;
+    // Animar la rotación 3D
+    const rotationAnim = Animated.loop(
+      Animated.parallel([
+        Animated.timing(rotateX, {
+          toValue: 360,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(rotateY, {
+          toValue: 360,
+          duration: 1200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(rotateZ, {
+          toValue: 360,
+          duration: 900,
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    rotationAnim.start();
+
+    // Simular que el dado está rodando
+    let rollCount = 0;
+    interval = setInterval(() => {
+      rollCount++;
+      const newValue = Math.floor(Math.random() * 6) + 1;
+      setDiceValue(newValue);
+
+      // Detener después de 3 segundos
+      if (rollCount >= 60) {
         clearInterval(interval);
-        // Detener la animación
-        rotateAnim.setValue(0);
-        // Fijar el resultado final
-        diceValue.current = Math.floor(Math.random() * 6) + 1;
-        // Escala final
+        rotationAnim.stop();
+        setIsRolling(false);
+
+        // Generar el valor final (más seguro)
+        const finalValue = Math.floor(Math.random() * 6) + 1;
+        setDiceValue(finalValue);
+
+        // Animación final
         Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.2,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
+          Animated.parallel([
+            Animated.timing(rotateX, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: false,
+            }),
+            Animated.timing(rotateY, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: false,
+            }),
+            Animated.timing(rotateZ, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: false,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(scaleAnim, {
+              toValue: 1.2,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]),
         ]).start();
 
         // Callback cuando termina de rodar
-        setTimeout(() => {
-          onRollComplete(diceValue.current, selectedChoice);
-        }, 500);
+        rollTimeout = setTimeout(() => {
+          onRollComplete(finalValue, selectedChoice);
+        }, 800);
       }
     }, 50);
 
-    return () => clearInterval(interval);
-  }, [onRollComplete, selectedChoice, rotateAnim, scaleAnim]);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(rollTimeout);
+      rotationAnim.stop();
+    };
+  }, [onRollComplete, selectedChoice, rotateX, rotateY, rotateZ, scaleAnim]);
 
   return (
     <View style={styles.container}>
       <View style={styles.playersBar}>
-        <View style={styles.playerDisplay}>
+        <View style={[styles.playerDisplay, styles.playerActive]}>
+          <Text style={styles.choserLabel}>⭐ ELIGE</Text>
           <Image source={image1} style={styles.playerBadgeImage} />
           <Text style={styles.playerBadgeName}>{player1?.nombre || "J1"}</Text>
         </View>
         <Text style={styles.vsSmall}>VS</Text>
         <View style={styles.playerDisplay}>
+          <Text style={styles.opponentLabel}>Espera</Text>
           <Image source={image2} style={styles.playerBadgeImage} />
           <Text style={styles.playerBadgeName}>{player2?.nombre || "J2"}</Text>
         </View>
@@ -92,24 +139,36 @@ const DiceRoller = ({
           {
             transform: [
               {
-                rotate: rotateAnim.interpolate({
+                rotateX: rotateX.interpolate({
+                  inputRange: [0, 360],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+              {
+                rotateY: rotateY.interpolate({
+                  inputRange: [0, 360],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+              {
+                rotateZ: rotateZ.interpolate({
                   inputRange: [0, 360],
                   outputRange: ["0deg", "360deg"],
                 }),
               },
               { scale: scaleAnim },
             ],
+            perspective: 1000,
           },
         ]}
       >
-        <Text style={styles.diceNumber}>{diceValue.current}</Text>
+        <Text style={styles.diceNumber}>{diceValue}</Text>
       </Animated.View>
 
-      {!isRolling.current && (
+      {!isRolling && (
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>
-            Resultado: {diceValue.current}{" "}
-            {diceValue.current % 2 === 0 ? "(PAR)" : "(IMPAR)"}
+            Resultado: {diceValue} {diceValue % 2 === 0 ? "(PAR)" : "(IMPAR)"}
           </Text>
           <View style={styles.winnerSection}>
             {determineWinner() === "player1" && (
