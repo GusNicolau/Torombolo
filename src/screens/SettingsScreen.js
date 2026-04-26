@@ -12,6 +12,11 @@ import { updateBackgroundMusicVolume } from "../soundManager";
 
 const TAPETE = require("../../assets/tapete/Tapete2.png");
 
+const BARAJAS = [
+  { id: "baraja", label: "🃏 Clásica", descripcion: "Baraja clásica" },
+  { id: "cartas", label: "🂠 PixelArt", descripcion: "Baraja alternativa" },
+];
+
 export default function SettingsScreen({ navigation }) {
   const {
     soundEnabled,
@@ -20,6 +25,8 @@ export default function SettingsScreen({ navigation }) {
     updateBackgroundVolume,
     sfxVolume,
     updateSfxVolume,
+    barajaSeleccionada, // ← añade esto
+    updateBaraja,
   } = useSoundSettings();
 
   const handleBackgroundVolumeChange = async (value) => {
@@ -45,9 +52,53 @@ export default function SettingsScreen({ navigation }) {
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>⚙️ Ajustes de Sonido</Text>
+          <Text style={styles.title}>⚙️ Ajustes</Text>
 
-          {/* Sound On/Off Button */}
+          {/* ── SECCIÓN BARAJA ── */}
+          <Text style={styles.sectionTitle}>🃏 Tipo de Baraja</Text>
+          <View style={styles.barajaSection}>
+            {BARAJAS.map((baraja) => {
+              const isSelected = barajaSeleccionada === baraja.id;
+              return (
+                <TouchableOpacity
+                  key={baraja.id}
+                  style={[
+                    styles.barajaBtn,
+                    isSelected && styles.barajaBtnSelected,
+                  ]}
+                  onPress={() => updateBaraja(baraja.id)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.barajaBtnLabel,
+                      isSelected && styles.barajaBtnLabelSelected,
+                    ]}
+                  >
+                    {baraja.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.barajaBtnDesc,
+                      isSelected && styles.barajaBtnDescSelected,
+                    ]}
+                  >
+                    {baraja.descripcion}
+                  </Text>
+                  {isSelected && (
+                    <View style={styles.barajaCheck}>
+                      <Text style={styles.barajaCheckText}>✓</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ── SECCIÓN SONIDO ── */}
+          <Text style={styles.sectionTitle}>🔊 Sonido</Text>
+
+          {/* Toggle sonido */}
           <View style={styles.soundToggleSection}>
             <TouchableOpacity
               style={[
@@ -63,8 +114,13 @@ export default function SettingsScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Background Music Volume */}
-          <View style={styles.volumeSection}>
+          {/* Volumen música de fondo */}
+          <View
+            style={[
+              styles.volumeSection,
+              !soundEnabled && styles.volumeSectionDisabled,
+            ]}
+          >
             <View style={styles.labelContainer}>
               <Text style={styles.label}>🎵 Música de Fondo</Text>
               <Text style={styles.volumeValue}>
@@ -84,8 +140,13 @@ export default function SettingsScreen({ navigation }) {
             />
           </View>
 
-          {/* SFX Volume (Cartas and Toast) */}
-          <View style={styles.volumeSection}>
+          {/* Volumen efectos */}
+          <View
+            style={[
+              styles.volumeSection,
+              !soundEnabled && styles.volumeSectionDisabled,
+            ]}
+          >
             <View style={styles.labelContainer}>
               <Text style={styles.label}>🔔 Efectos de Sonido</Text>
               <Text style={styles.volumeValue}>
@@ -159,7 +220,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     color: "#FF6B35",
-    marginBottom: 40,
+    marginBottom: 32,
     marginTop: 90,
     textAlign: "center",
     letterSpacing: 1,
@@ -167,13 +228,92 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
+  sectionTitle: {
+    color: "#FF6B35",
+    fontSize: 16,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    letterSpacing: 1,
+    marginBottom: 12,
+    marginLeft: 4,
+    textTransform: "uppercase",
+  },
+
+  // Baraja
+  barajaSection: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 36,
+  },
+  barajaBtn: {
+    flex: 1,
+    backgroundColor: "rgba(20,20,20,0.8)",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: "#444",
+    alignItems: "center",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  barajaBtnSelected: {
+    borderColor: "#FF6B35",
+    backgroundColor: "rgba(255,107,53,0.12)",
+    shadowColor: "#FF6B35",
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+  },
+  barajaBtnLabel: {
+    color: "#aaa",
+    fontSize: 18,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  barajaBtnLabelSelected: {
+    color: "#fff",
+  },
+  barajaBtnDesc: {
+    color: "#666",
+    fontSize: 11,
+    fontFamily: "monospace",
+    textAlign: "center",
+  },
+  barajaBtnDescSelected: {
+    color: "#FF6B35",
+  },
+  barajaCheck: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "#FF6B35",
+    borderRadius: 10,
+    width: 22,
+    height: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#1a1a1a",
+  },
+  barajaCheckText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  // Sonido
   soundToggleSection: {
     width: "100%",
-    marginBottom: 50,
+    marginBottom: 20,
     alignItems: "center",
   },
   soundToggle: {
-    width: "95%",
+    width: "100%",
     paddingVertical: 22,
     paddingHorizontal: 20,
     borderRadius: 14,
@@ -207,13 +347,16 @@ const styles = StyleSheet.create({
   },
   volumeSection: {
     width: "100%",
-    marginBottom: 50,
+    marginBottom: 20,
     paddingHorizontal: 10,
     paddingVertical: 16,
     backgroundColor: "rgba(20, 20, 20, 0.6)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255, 107, 53, 0.2)",
+  },
+  volumeSectionDisabled: {
+    opacity: 0.4,
   },
   labelContainer: {
     flexDirection: "row",

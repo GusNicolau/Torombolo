@@ -10,8 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DiceRoller from "../components/DiceRoller";
-import DiceSelectionPopup from "../components/DiceSelectionPopup";
+import CoinFlipper from "../components/CoinFlipper";
 import { usePlayers } from "../context/PlayersContext";
 import { useSoundSettings } from "../context/SoundSettingsContext";
 import {
@@ -21,58 +20,106 @@ import {
   updateSoundSettings,
 } from "../soundManager";
 
-const CARTAS = {
-  // Bastos
-  "1Bastos": require("../../assets/cartas/1Bastos.png"),
-  "2Bastos": require("../../assets/cartas/2Bastos.png"),
-  "3Bastos": require("../../assets/cartas/3Bastos.png"),
-  "4Bastos": require("../../assets/cartas/4Bastos.png"),
-  "5Bastos": require("../../assets/cartas/5Bastos.png"),
-  "6Bastos": require("../../assets/cartas/6Bastos.png"),
-  "7Bastos": require("../../assets/cartas/7Bastos.png"),
-  "10Bastos": require("../../assets/cartas/10Bastos.png"),
-  "11Bastos": require("../../assets/cartas/11Bastos.png"),
-  "12Bastos": require("../../assets/cartas/12Bastos.png"),
-  // Copas
-  "1Copas": require("../../assets/cartas/1Copas.png"),
-  "2Copas": require("../../assets/cartas/2Copas.png"),
-  "3Copas": require("../../assets/cartas/3Copas.png"),
-  "4Copas": require("../../assets/cartas/4Copas.png"),
-  "5Copas": require("../../assets/cartas/5Copas.png"),
-  "6Copas": require("../../assets/cartas/6Copas.png"),
-  "7Copas": require("../../assets/cartas/7Copas.png"),
-  "10Copas": require("../../assets/cartas/10Copas.png"),
-  "11Copas": require("../../assets/cartas/11Copas.png"),
-  "12Copas": require("../../assets/cartas/12Copas.png"),
-  // Espadas
-  "1Espadas": require("../../assets/cartas/1Espadas.png"),
-  "2Espadas": require("../../assets/cartas/2Espadas.png"),
-  "3Espadas": require("../../assets/cartas/3Espadas.png"),
-  "4Espadas": require("../../assets/cartas/4Espadas.png"),
-  "5Espadas": require("../../assets/cartas/5Espadas.png"),
-  "6Espadas": require("../../assets/cartas/6Espadas.png"),
-  "7Espadas": require("../../assets/cartas/7Espadas.png"),
-  "10Espadas": require("../../assets/cartas/10Espadas.png"),
-  "11Espadas": require("../../assets/cartas/11Espadas.png"),
-  "12Espadas": require("../../assets/cartas/12Espadas.png"),
-  // Oros
-  "1Oros": require("../../assets/cartas/1Oros.png"),
-  "2Oros": require("../../assets/cartas/2Oros.png"),
-  "3Oros": require("../../assets/cartas/3Oros.png"),
-  "4Oros": require("../../assets/cartas/4Oros.png"),
-  "5Oros": require("../../assets/cartas/5Oros.png"),
-  "6Oros": require("../../assets/cartas/6Oros.png"),
-  "7Oros": require("../../assets/cartas/7Oros.png"),
-  "10Oros": require("../../assets/cartas/10Oros.png"),
-  "11Oros": require("../../assets/cartas/11Oros.png"),
-  "12Oros": require("../../assets/cartas/12Oros.png"),
+const CARTAS_BARAJA = {
+  cartas: {
+    // Bastos
+    "1Bastos": require("../../assets/cartas/1Bastos.png"),
+    "2Bastos": require("../../assets/cartas/2Bastos.png"),
+    "3Bastos": require("../../assets/cartas/3Bastos.png"),
+    "4Bastos": require("../../assets/cartas/4Bastos.png"),
+    "5Bastos": require("../../assets/cartas/5Bastos.png"),
+    "6Bastos": require("../../assets/cartas/6Bastos.png"),
+    "7Bastos": require("../../assets/cartas/7Bastos.png"),
+    "10Bastos": require("../../assets/cartas/10Bastos.png"),
+    "11Bastos": require("../../assets/cartas/11Bastos.png"),
+    "12Bastos": require("../../assets/cartas/12Bastos.png"),
+    // Copas
+    "1Copas": require("../../assets/cartas/1Copas.png"),
+    "2Copas": require("../../assets/cartas/2Copas.png"),
+    "3Copas": require("../../assets/cartas/3Copas.png"),
+    "4Copas": require("../../assets/cartas/4Copas.png"),
+    "5Copas": require("../../assets/cartas/5Copas.png"),
+    "6Copas": require("../../assets/cartas/6Copas.png"),
+    "7Copas": require("../../assets/cartas/7Copas.png"),
+    "10Copas": require("../../assets/cartas/10Copas.png"),
+    "11Copas": require("../../assets/cartas/11Copas.png"),
+    "12Copas": require("../../assets/cartas/12Copas.png"),
+    // Espadas
+    "1Espadas": require("../../assets/cartas/1Espadas.png"),
+    "2Espadas": require("../../assets/cartas/2Espadas.png"),
+    "3Espadas": require("../../assets/cartas/3Espadas.png"),
+    "4Espadas": require("../../assets/cartas/4Espadas.png"),
+    "5Espadas": require("../../assets/cartas/5Espadas.png"),
+    "6Espadas": require("../../assets/cartas/6Espadas.png"),
+    "7Espadas": require("../../assets/cartas/7Espadas.png"),
+    "10Espadas": require("../../assets/cartas/10Espadas.png"),
+    "11Espadas": require("../../assets/cartas/11Espadas.png"),
+    "12Espadas": require("../../assets/cartas/12Espadas.png"),
+    // Oros
+    "1Oros": require("../../assets/cartas/1Oros.png"),
+    "2Oros": require("../../assets/cartas/2Oros.png"),
+    "3Oros": require("../../assets/cartas/3Oros.png"),
+    "4Oros": require("../../assets/cartas/4Oros.png"),
+    "5Oros": require("../../assets/cartas/5Oros.png"),
+    "6Oros": require("../../assets/cartas/6Oros.png"),
+    "7Oros": require("../../assets/cartas/7Oros.png"),
+    "10Oros": require("../../assets/cartas/10Oros.png"),
+    "11Oros": require("../../assets/cartas/11Oros.png"),
+    "12Oros": require("../../assets/cartas/12Oros.png"),
+  },
+  baraja: {
+    // Bastos
+    "1Bastos": require("../../assets/baraja/1Bastos.png"),
+    "2Bastos": require("../../assets/baraja/2Bastos.png"),
+    "3Bastos": require("../../assets/baraja/3Bastos.png"),
+    "4Bastos": require("../../assets/baraja/4Bastos.png"),
+    "5Bastos": require("../../assets/baraja/5Bastos.png"),
+    "6Bastos": require("../../assets/baraja/6Bastos.png"),
+    "7Bastos": require("../../assets/baraja/7Bastos.png"),
+    "10Bastos": require("../../assets/baraja/10Bastos.png"),
+    "11Bastos": require("../../assets/baraja/11Bastos.png"),
+    "12Bastos": require("../../assets/baraja/12Bastos.png"),
+    // Copas
+    "1Copas": require("../../assets/baraja/1Copas.png"),
+    "2Copas": require("../../assets/baraja/2Copas.png"),
+    "3Copas": require("../../assets/baraja/3Copas.png"),
+    "4Copas": require("../../assets/baraja/4Copas.png"),
+    "5Copas": require("../../assets/baraja/5Copas.png"),
+    "6Copas": require("../../assets/baraja/6Copas.png"),
+    "7Copas": require("../../assets/baraja/7Copas.png"),
+    "10Copas": require("../../assets/baraja/10Copas.png"),
+    "11Copas": require("../../assets/baraja/11Copas.png"),
+    "12Copas": require("../../assets/baraja/12Copas.png"),
+    // Espadas
+    "1Espadas": require("../../assets/baraja/1Espadas.png"),
+    "2Espadas": require("../../assets/baraja/2Espadas.png"),
+    "3Espadas": require("../../assets/baraja/3Espadas.png"),
+    "4Espadas": require("../../assets/baraja/4Espadas.png"),
+    "5Espadas": require("../../assets/baraja/5Espadas.png"),
+    "6Espadas": require("../../assets/baraja/6Espadas.png"),
+    "7Espadas": require("../../assets/baraja/7Espadas.png"),
+    "10Espadas": require("../../assets/baraja/10Espadas.png"),
+    "11Espadas": require("../../assets/baraja/11Espadas.png"),
+    "12Espadas": require("../../assets/baraja/12Espadas.png"),
+    // Oros
+    "1Oros": require("../../assets/baraja/1Oros.png"),
+    "2Oros": require("../../assets/baraja/2Oros.png"),
+    "3Oros": require("../../assets/baraja/3Oros.png"),
+    "4Oros": require("../../assets/baraja/4Oros.png"),
+    "5Oros": require("../../assets/baraja/5Oros.png"),
+    "6Oros": require("../../assets/baraja/6Oros.png"),
+    "7Oros": require("../../assets/baraja/7Oros.png"),
+    "10Oros": require("../../assets/baraja/10Oros.png"),
+    "11Oros": require("../../assets/baraja/11Oros.png"),
+    "12Oros": require("../../assets/baraja/12Oros.png"),
+  },
 };
 
 const REVERSO = require("../../assets/cartas/reverso.jpg");
 const TAPETE = require("../../assets/tapete/Tapete2.png");
 const PALOS = ["Bastos", "Copas", "Espadas", "Oros"];
 
-function crearBaraja() {
+function crearBaraja(cartas) {
   const baraja = [];
   PALOS.forEach((palo) => {
     for (let valor = 1; valor <= 12; valor++) {
@@ -82,20 +129,22 @@ function crearBaraja() {
         valor,
         palo,
         tipo: valor <= 7 ? "numero" : "figura",
-        imagen: CARTAS[key],
+        imagen: cartas[key],
       });
     }
   });
   return baraja.sort(() => Math.random() - 0.5);
 }
-
 export default function GameScreen({ navigation, route }) {
   const { jugadores } = usePlayers();
-  const { soundEnabled, sfxVolume, backgroundVolume } = useSoundSettings();
+  const { soundEnabled, sfxVolume, backgroundVolume, barajaSeleccionada } =
+    useSoundSettings();
   const numPlayers = route?.params?.numPlayers || 3;
+
   const players = jugadores.slice(0, numPlayers);
 
-  const [deck, setDeck] = useState(crearBaraja());
+  const CARTAS = CARTAS_BARAJA[barajaSeleccionada] ?? CARTAS_BARAJA["cartas"];
+  const [deck, setDeck] = useState(() => crearBaraja(CARTAS));
   const [playerCards, setPlayerCards] = useState(Array(numPlayers).fill([]));
   const [revealedCard, setRevealedCard] = useState(null); // carta en grande
   const scaleAnim = useState(new Animated.Value(1))[0];
@@ -108,11 +157,14 @@ export default function GameScreen({ navigation, route }) {
   const tutorialFadeAnim = useState(new Animated.Value(0))[0];
   // Confirm finish popup
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  // Dice state para el 1
-  const [showDiceSelection, setShowDiceSelection] = useState(false);
-  const [showDiceRoller, setShowDiceRoller] = useState(false);
-  const [diceSelectedChoice, setDiceSelectedChoice] = useState(null);
+  // Coin flip state para el 1
+  const [showCoinFlipper, setShowCoinFlipper] = useState(false);
+  const [coinCandidates, setCoinCandidates] = useState([]); // indices
+  const [coinChooserIdx, setCoinChooserIdx] = useState(0);
+  const [coinChoices, setCoinChoices] = useState({}); // {playerIdx: 'cara'|'cruz'}
+  const [coinFlipping, setCoinFlipping] = useState(false);
   const [pendingCard, setPendingCard] = useState(null);
+  const [revealedCardTarget, setRevealedCardTarget] = useState(null); // { player, index }
 
   // Update sound settings when context changes
   useEffect(() => {
@@ -143,12 +195,40 @@ export default function GameScreen({ navigation, route }) {
     setDeck(deck.slice(1));
     setRevealedCard(card);
 
-    // Play card sound immediately - don't wait
+    // Calcular a quién va la carta
+    const targetIdx = card.valor === 1 ? -1 : getPlayerIndex(card);
+    if (targetIdx >= 0 && players[targetIdx]) {
+      setRevealedCardTarget({ player: players[targetIdx], index: targetIdx });
+    } else if (card.valor === 1) {
+      const cardCounts = playerCards.map((c) => c.length);
+      const min = Math.min(...cardCounts);
+      const candidates = cardCounts
+        .map((count, i) => (count === min ? i : null))
+        .filter((i) => i !== null);
+
+      if (candidates.length === 1) {
+        // Un solo ganador claro
+        setRevealedCardTarget({
+          player: players[candidates[0]],
+          index: candidates[0],
+        });
+      } else {
+        // Empate → moneda
+        setRevealedCardTarget({ player: null, index: -1, candidates });
+      }
+    } else {
+      const targetIdx = getPlayerIndex(card);
+      if (targetIdx >= 0 && players[targetIdx]) {
+        setRevealedCardTarget({ player: players[targetIdx], index: targetIdx });
+      } else {
+        setRevealedCardTarget(null);
+      }
+    }
+
     playSound("carta").catch((err) =>
       console.warn("Card sound error:", err?.message),
     );
 
-    // Start animation after sound playback
     Animated.sequence([
       Animated.timing(scaleAnim, {
         toValue: 1.1,
@@ -188,57 +268,52 @@ export default function GameScreen({ navigation, route }) {
     }
   }
 
-  // Función para determinar ganador del 1 basado en el dado
-  function determineWinnerOf1(diceResult, selectedChoice) {
-    const isEven = diceResult % 2 === 0;
-    const playerWins =
-      (selectedChoice === "pares" && isEven) ||
-      (selectedChoice === "impares" && !isEven);
-
-    if (numPlayers === 3) {
-      // En el juego de 3 jugadores, determinar quién hizo la predicción
-      // Asumimos que el jugador actual es quien hace la predicción
-      // pero en un juego real, deberías tener un turno definido
-      if (playerWins) {
-        // El jugador que eligió correctamente se queda el 1
-        // Por ahora, asignamos al jugador con menos cartas (el que predijo)
-        const cardCounts = playerCards.map((c) => c.length);
-        const minCount = Math.min(...cardCounts);
-        const candidatos = cardCounts
-          .map((count, i) => (count === minCount ? i : null))
-          .filter((i) => i !== null);
-        return candidatos[0];
-      } else {
-        // El jugador que no eligió correctamente
-        // asignamos al segundo jugador con menos cartas
-        const cardCounts = playerCards.map((c) => c.length);
-        const sorted = cardCounts
-          .map((count, i) => ({ count, i }))
-          .sort((a, b) => a.count - b.count);
-        return sorted.length > 1 ? sorted[1].i : sorted[0].i;
-      }
-    } else {
-      // 4 jugadores
-      if (playerWins) {
-        return Math.floor(Math.random() * 2); // Uno de los dos primeros
-      } else {
-        return Math.floor(Math.random() * 2) + 2; // Uno de los dos últimos
-      }
-    }
+  // Función para determinar ganador del 1: el jugador con menos cartas
+  function getWinnerOf1() {
+    const cardCounts = playerCards.map((c) => c.length);
+    const minCount = Math.min(...cardCounts);
+    const candidates = cardCounts
+      .map((count, i) => (count === minCount ? i : null))
+      .filter((i) => i !== null);
+    return candidates[0];
   }
 
   const placeRevealedCard = () => {
     if (gameOver) return;
     if (!revealedCard) return;
 
-    // Si es un 1, mostrar el popup de selección
+    // Si es un 1, preparar la fase de moneda entre los empates
     if (revealedCard.valor === 1) {
-      // Play toast sound when 1 appears
       playSound("toast").catch((err) =>
         console.warn("Toast sound error:", err?.message),
       );
-      setPendingCard(revealedCard);
-      setShowDiceSelection(true);
+
+      const cardCounts = playerCards.map((c) => c.length);
+      const min = Math.min(...cardCounts);
+      const candidates = cardCounts
+        .map((count, i) => (count === min ? i : null))
+        .filter((i) => i !== null);
+
+      if (candidates.length === 1) {
+        // Un solo jugador con menos cartas → carta directa, sin moneda
+        const winnerIndex = candidates[0];
+        const newPlayerCards = playerCards.map((arr, i) =>
+          i === winnerIndex ? [...arr, revealedCard] : arr,
+        );
+        setPlayerCards(newPlayerCards);
+        checkFinalPhase(newPlayerCards);
+        setRevealedCard(null);
+        setRevealedCardTarget(null);
+      } else {
+        // Empate → lanzar moneda entre los candidatos
+        setPendingCard(revealedCard);
+        setRevealedCard(null);
+        setCoinCandidates(candidates);
+        setCoinChooserIdx(0);
+        setCoinChoices({});
+        setCoinFlipping(false);
+        setShowCoinFlipper(true);
+      }
       return;
     }
 
@@ -250,6 +325,7 @@ export default function GameScreen({ navigation, route }) {
     setPlayerCards(newPlayerCards);
     checkFinalPhase(newPlayerCards);
     setRevealedCard(null);
+    setRevealedCardTarget(null);
   };
 
   // Comprueba la fase final según el límite actual
@@ -304,48 +380,66 @@ export default function GameScreen({ navigation, route }) {
     }).start(() => setShowTutorial(false));
   };
 
-  const handleDiceSelection = (choice) => {
-    setDiceSelectedChoice(choice);
-    // El dado se lanzará automáticamente después de seleccionar
-    setTimeout(() => {
-      setShowDiceSelection(false);
-      setShowDiceRoller(true);
-    }, 800);
-  };
-
-  // Determina el otro jugador que se enfrenta por el 1
-  const getOpponentIndex = () => {
-    const cardCounts = playerCards.map((c) => c.length);
-    const sorted = cardCounts
-      .map((count, i) => ({ count, i }))
-      .sort((a, b) => a.count - b.count);
-    // Retorna el segundo con menos cartas (contrincante del que eligió)
-    return sorted.length > 1
-      ? sorted[1].i
-      : sorted.length > 0
-        ? sorted[0].i
-        : 0;
-  };
-
-  const handleDiceRollComplete = (diceResult, selectedChoice) => {
+  const handleCoinFlipComplete = (result) => {
     if (!pendingCard) return;
 
-    // Determinar quién gana el 1
-    const winnerIndex = determineWinnerOf1(diceResult, selectedChoice);
-    const newPlayerCards = playerCards.map((arr, i) =>
-      i === winnerIndex ? [...arr, pendingCard] : arr,
+    const winners = coinCandidates.filter(
+      (pIdx) => coinChoices[pIdx] === result,
     );
-    setPlayerCards(newPlayerCards);
-    checkFinalPhase(newPlayerCards);
 
-    // Resetear todo
-    setRevealedCard(null);
-    setShowDiceRoller(false);
-    setDiceSelectedChoice(null);
-    setPendingCard(null);
+    if (winners.length === 1) {
+      // Ganador claro → asignar carta
+      const winnerIndex = winners[0];
+      const newPlayerCards = playerCards.map((arr, i) =>
+        i === winnerIndex ? [...arr, pendingCard] : arr,
+      );
+      setPlayerCards(newPlayerCards);
+      checkFinalPhase(newPlayerCards);
+      setRevealedCard(null);
+      setShowCoinFlipper(false);
+      setPendingCard(null);
+      setCoinCandidates([]);
+      setCoinChoices({});
+      setCoinChooserIdx(0);
+      setCoinFlipping(false);
+    } else if (winners.length === 0) {
+      // Nadie acertó → todos los candidatos vuelven a jugar
+      setCoinCandidates(coinCandidates);
+      setCoinChooserIdx(0);
+      setCoinChoices({});
+      setCoinFlipping(false);
+    } else {
+      // Varios acertaron → nueva ronda solo entre los ganadores
+      setCoinCandidates(winners);
+      setCoinChooserIdx(0);
+      setCoinChoices({});
+      setCoinFlipping(false);
+    }
   };
 
-  const tutorialContent = `Reglas del juego:\n\n• Cartas 1-7: Números\n  - 1: ¡Especial! Se lanza un dado\n    • Elige PARES o IMPARES\n    • El que acierte se queda el 1\n  - 2-4: Jugador izquierda\n  - 5-7: Jugador derecha\n\n• Cartas 10-12: Figuras\n  - Van al jugador derecha\n\n• El juego termina cuando un jugador alcanza el límite.\n\n• Si dos jugadores alcanzan el límite:\n  - El que tenga menos cartas pierde\n  - Si empatan, el límite sube +1`;
+  const handleChoice = (choice) => {
+    const currentPlayerIdx = coinCandidates[coinChooserIdx];
+    const updated = { ...coinChoices, [currentPlayerIdx]: choice };
+    setCoinChoices(updated);
+
+    if (coinCandidates.length === 2 && coinChooserIdx === 0) {
+      // Solo 2 jugadores: el segundo elige el contrario automáticamente
+      const other = coinCandidates[1];
+      updated[other] = choice === "cara" ? "cruz" : "cara";
+      setCoinChoices(updated);
+      setCoinFlipping(true);
+      return;
+    }
+
+    // Avanzar al siguiente o lanzar si ya eligieron todos
+    if (coinChooserIdx + 1 < coinCandidates.length) {
+      setCoinChooserIdx((i) => i + 1);
+    } else {
+      setCoinFlipping(true);
+    }
+  };
+
+  const tutorialContent = `Reglas del juego:\n\n• Cartas 1-7: Números\n  - 1: ¡Especial! Se lanza una moneda\n    • La moneda decide el ganador\n    • Se la lleva el jugador con menos cartas\n  - 2-4: Jugador izquierda\n  - 5-7: Jugador derecha\n\n• Cartas 10-12: Figuras\n  - Van al jugador derecha\n\n• El juego termina cuando un jugador alcanza el límite.\n\n• Si dos jugadores alcanzan el límite:\n  - El que tenga menos cartas pierde\n  - Si empatan, el límite sube +1`;
 
   const { width, height } = Dimensions.get("window");
   // Posiciones para 3 y 4 jugadores
@@ -355,7 +449,7 @@ export default function GameScreen({ navigation, route }) {
           { left: -30, top: height / 2 - 110, rotate: "90deg" },
           { left: width / 2 - 120, top: 120, rotate: "0deg" },
           { right: -30, top: height / 2 - 120, rotate: "270deg" },
-          { left: width / 2 - 120, bottom: 260, rotate: "0deg" }, // 4º jugador abajo centrado
+          { left: width / 2 - 120, top: height - 420, rotate: "0deg" }, // ← top en vez de bottom
         ]
       : [
           { left: -30, top: height / 2 - 70, rotate: "90deg" },
@@ -421,18 +515,6 @@ export default function GameScreen({ navigation, route }) {
             onPress={showTutorialPopup}
           >
             <Text style={styles.tutorialBtnText}>?</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.backButton,
-              { top: 120, backgroundColor: "#FF6B35" },
-            ]}
-            onPress={() => {
-              setPendingCard({ valor: 1, palo: "test" });
-              setShowDiceSelection(true);
-            }}
-          >
-            <Text style={styles.backButtonText}>Test Dado</Text>
           </TouchableOpacity>
         </>
       )}
@@ -501,6 +583,36 @@ export default function GameScreen({ navigation, route }) {
           onPress={placeRevealedCard}
           activeOpacity={0.9}
         >
+          {/* Indicador del jugador destino */}
+          {revealedCardTarget?.player && (
+            <View style={styles.revealedTarget}>
+              <Image
+                source={revealedCardTarget.player.imagen}
+                style={styles.revealedTargetAvatar}
+              />
+              <Text style={styles.revealedTargetName}>
+                {revealedCardTarget.player.nombre}
+              </Text>
+            </View>
+          )}
+          {revealedCardTarget?.index === -1 && (
+            <View style={styles.revealedTarget}>
+              <Text style={styles.revealedTargetCoin}>🪙 ¡Duelo!</Text>
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                {revealedCardTarget.candidates?.map((pIdx) => (
+                  <View key={pIdx} style={{ alignItems: "center" }}>
+                    <Image
+                      source={players[pIdx].imagen}
+                      style={styles.revealedTargetAvatarSmall}
+                    />
+                    <Text style={styles.revealedTargetNameSmall}>
+                      {players[pIdx].nombre}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
           <Animated.Image
             source={revealedCard.imagen}
             style={[styles.revealedCard, { transform: [{ scale: scaleAnim }] }]}
@@ -509,26 +621,70 @@ export default function GameScreen({ navigation, route }) {
       )}
 
       {/* Popup de selección pares/impares */}
-      <DiceSelectionPopup
-        visible={showDiceSelection}
-        player1={players[0]}
-        player2={players[getOpponentIndex()]}
-        playerImage1={players[0]?.imagen}
-        playerImage2={players[getOpponentIndex()]?.imagen}
-        onSelect={handleDiceSelection}
-      />
+      {/* Componente de la moneda */}
+      {showCoinFlipper && (
+        <View style={styles.coinFlipperOverlay}>
+          <View style={styles.coinContent}>
+            <View style={styles.coinAvatarRow} pointerEvents="box-none">
+              {coinCandidates.map((pIdx, i) => {
+                const p = players[pIdx];
+                const chosen = coinChoices[pIdx];
+                const isActive = i === coinChooserIdx && !coinFlipping;
+                return (
+                  <View
+                    key={pIdx}
+                    style={styles.coinAvatarBox}
+                    pointerEvents="box-none"
+                  >
+                    <Image
+                      source={p?.imagen}
+                      style={[
+                        styles.coinAvatar,
+                        isActive && styles.coinAvatarActive,
+                      ]}
+                      pointerEvents="none"
+                    />
+                    <Text style={styles.coinAvatarName}>{p?.nombre}</Text>
+                    {chosen && (
+                      <Text style={styles.coinChoiceText}>{chosen}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
 
-      {/* Componente del dado */}
-      {showDiceRoller && (
-        <View style={styles.diceRollerOverlay}>
-          <DiceRoller
-            onRollComplete={handleDiceRollComplete}
-            selectedChoice={diceSelectedChoice}
-            player1={players[0]}
-            player2={players[getOpponentIndex()]}
-            image1={players[0]?.imagen}
-            image2={players[getOpponentIndex()]?.imagen}
-          />
+            <View style={styles.coinCenter}>
+              {!coinFlipping ? (
+                <View style={styles.coinChooserArea}>
+                  <Text style={styles.coinChooserText}>
+                    {players[coinCandidates[coinChooserIdx]]?.nombre ||
+                      "Jugador"}{" "}
+                    selecciona:
+                  </Text>
+                  <View style={styles.coinChoiceButtons}>
+                    <TouchableOpacity
+                      style={[styles.btn, { marginRight: 12 }]}
+                      onPress={() => handleChoice("cara")}
+                    >
+                      <Text style={styles.btnText}>Cara</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: "#4169E1" }]}
+                      onPress={() => handleChoice("cruz")}
+                    >
+                      <Text style={styles.btnText}>Cruz</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <CoinFlipper
+                  start={coinFlipping}
+                  onFlipComplete={handleCoinFlipComplete}
+                  size={200}
+                />
+              )}
+            </View>
+          </View>
         </View>
       )}
 
@@ -689,13 +845,13 @@ const styles = StyleSheet.create({
   },
   playerName: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: "bold",
     fontFamily: "monospace",
   },
   cardCounter: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     marginTop: 4,
   },
@@ -718,12 +874,13 @@ const styles = StyleSheet.create({
   },
   deckWrapper: {
     position: "absolute",
-    left: Dimensions.get("window").width / 2 - 120, // centrado
-    width: 240, // más ancho
-    height: 250, // mitad de la altura real
-    overflow: "hidden", // solo se ve la parte que cabe
+    left: Dimensions.get("window").width / 2 - 120,
+    width: 240,
+    height: 250,
+    overflow: "hidden",
     alignItems: "center",
-    bottom: 0, // lo colocamos un poco arriba del borde
+    bottom: 0,
+    zIndex: 1, // ← añade esto
   },
   deckImage: {
     width: 240, // más ancho que las cartas normales
@@ -732,11 +889,11 @@ const styles = StyleSheet.create({
     marginTop: 0, // mover la carta hacia arriba para que solo se vea la mitad
   },
   avatar: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
     borderRadius: 30,
     marginBottom: 0,
-    borderWidth: 3,
+    borderWidth: 1,
     borderColor: "#fff",
   },
   revealedOverlay: {
@@ -744,7 +901,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: "100%",
-    height: "120%",
+    height: "100%",
     backgroundColor: "rgba(0,0,0,0.8)",
     justifyContent: "center",
     alignItems: "center",
@@ -937,7 +1094,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
-  diceRollerOverlay: {
+  coinFlipperOverlay: {
     position: "absolute",
     top: 0,
     left: 0,
@@ -947,5 +1104,115 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 999,
+  },
+  coinContent: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 220,
+  },
+  coinAvatarRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 20,
+  },
+  coinAvatarBox: {
+    alignItems: "center",
+    pointerEvents: "box-none",
+  },
+  coinAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+    pointerEvents: "none",
+  },
+  coinAvatarActive: {
+    borderColor: "#FFD700",
+    borderWidth: 3,
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+  },
+  coinAvatarName: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 6,
+    textAlign: "center",
+  },
+  coinChoiceText: {
+    color: "#FF6B35",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginTop: 2,
+  },
+  coinCenter: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  coinChooserArea: {
+    alignItems: "center",
+    width: "100%",
+  },
+  coinChooserText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  coinChoiceButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+  },
+  revealedTarget: {
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+  },
+  revealedTargetAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: "#FF6B35",
+    marginBottom: 8,
+  },
+  revealedTargetName: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  revealedTargetCoin: {
+    color: "#FFD700",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  revealedTargetAvatarSmall: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#FFD700",
+  },
+  revealedTargetNameSmall: {
+    color: "#FFD700",
+    fontSize: 13,
+    fontWeight: "bold",
+    marginTop: 4,
+    textAlign: "center",
   },
 });

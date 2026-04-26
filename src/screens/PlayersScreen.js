@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Alert,
+  FlatList,
   Image,
   ImageBackground,
   ScrollView,
@@ -13,7 +14,7 @@ import {
 
 import { usePlayers } from "../context/PlayersContext";
 const FONDO = require("../../assets/images/Inicio5.png");
-// Avatares por defecto disponibles
+
 const AVATARES = [
   require("../../assets/moustache/ale.png"),
   require("../../assets/moustache/andreu.png"),
@@ -25,13 +26,24 @@ const AVATARES = [
   require("../../assets/avatares/Avatar1.png"),
   require("../../assets/avatares/Avatar2.png"),
   require("../../assets/avatares/Avatar3.png"),
+  require("../../assets/avatares/Avatar4.png"),
+  require("../../assets/avatares/Avatar5.png"),
+  require("../../assets/avatares/Avatar6.png"),
 ];
 
 export default function PlayersScreen({ navigation }) {
   const [playerName, setPlayerName] = useState("");
   const { jugadores, addJugador, removeJugador, moveJugador } = usePlayers();
 
+  // Estado para edición de nombre
+  const [editingName, setEditingName] = useState(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  // Estado para edición de avatar
+  const [editingAvatar, setEditingAvatar] = useState(null);
+
   let maxAlertShown = false;
+
   const addPlayer = () => {
     if (playerName.trim() === "") return;
     if (jugadores.length >= 4) {
@@ -44,7 +56,6 @@ export default function PlayersScreen({ navigation }) {
       }
       return;
     }
-    // Evitar repetir avatar si hay disponibles
     const usados = jugadores.map((j) => j.imagen);
     const disponibles = AVATARES.filter((a) => !usados.includes(a));
     let randomAvatar;
@@ -54,52 +65,66 @@ export default function PlayersScreen({ navigation }) {
     } else {
       randomAvatar = AVATARES[Math.floor(Math.random() * AVATARES.length)];
     }
-    addJugador({
-      nombre: playerName.trim(),
-      imagen: randomAvatar,
-    });
+    addJugador({ nombre: playerName.trim(), imagen: randomAvatar });
     setPlayerName("");
     maxAlertShown = false;
+  };
+
+  // Edición de nombre
+  const confirmEdit = (oldName) => {
+    const trimmed = editingValue.trim();
+    if (trimmed === "" || trimmed === oldName) {
+      setEditingName(null);
+      return;
+    }
+    if (jugadores.some((j) => j.nombre === trimmed)) {
+      Alert.alert("Nombre repetido", "Ya existe un jugador con ese nombre.");
+      return;
+    }
+    const jugador = jugadores.find((j) => j.nombre === oldName);
+    removeJugador(oldName);
+    addJugador({ ...jugador, nombre: trimmed });
+    setEditingName(null);
+  };
+
+  // Edición de avatar
+  const confirmAvatarChange = (jugadorNombre, newImagen) => {
+    const jugador = jugadores.find((j) => j.nombre === jugadorNombre);
+    if (!jugador) return;
+    removeJugador(jugadorNombre);
+    addJugador({ ...jugador, imagen: newImagen });
+    setEditingAvatar(null);
   };
 
   const movePlayerUp = (nombre) => {
     const idx = jugadores.findIndex((j) => j.nombre === nombre);
     if (idx <= 0) return;
-
     const posiciones = ["top", "middle", "bottom"];
     const currentPos = jugadores[idx].posicion;
     const currentIdx = posiciones.indexOf(currentPos);
-    if (currentIdx > 0) {
-      moveJugador(nombre, posiciones[currentIdx - 1]);
-    }
+    if (currentIdx > 0) moveJugador(nombre, posiciones[currentIdx - 1]);
   };
 
   const movePlayerDown = (nombre) => {
     const idx = jugadores.findIndex((j) => j.nombre === nombre);
     if (idx >= jugadores.length - 1) return;
-
     const posiciones = ["top", "middle", "bottom"];
     const currentPos = jugadores[idx].posicion;
     const currentIdx = posiciones.indexOf(currentPos);
-    if (currentIdx < posiciones.length - 1) {
+    if (currentIdx < posiciones.length - 1)
       moveJugador(nombre, posiciones[currentIdx + 1]);
-    }
   };
 
-  // Roles dinámicos según número de jugadores
   const getRoleColor = (index) => {
     if (jugadores.length === 4) {
-      // Oros, Copas, Espadas, Bastos
       return ["#fcb33f", "#40b1b9", "#9b59b6", "#b6ec23"][index] || "#95a5a6";
     } else {
-      // 3 jugadores: 2-4, 5-7, figuras
       return ["#fcb33f", "#40b1b9", "#9b59b6"][index] || "#95a5a6";
     }
   };
 
   const getRoleLabel = (index) => {
     if (jugadores.length === 4) {
-      // Moneda, Espada, Copa, Basto
       return (
         ["🪙 Oros", "⚔️ Espadas", "🍷 Copas", "🪵 Bastos"][index] || "Sin rol"
       );
@@ -111,15 +136,48 @@ export default function PlayersScreen({ navigation }) {
   };
 
   const renderPlayer = (item, index) => {
-    // Siempre mostrar imagen, si no hay, usar avatar por defecto
     const avatarSource = item.imagen || AVATARES[0];
+    const isEditingThisName = editingName === item.nombre;
+
     return (
       <View style={styles.playerCard}>
         <View style={styles.playerContent}>
           <View style={styles.playerInfo}>
-            <Image source={avatarSource} style={styles.avatar} />
+            {/* Avatar editable */}
+            <TouchableOpacity
+              onPress={() => setEditingAvatar(item.nombre)}
+              style={styles.avatarWrapper}
+            >
+              <Image source={avatarSource} style={styles.avatar} />
+              <View style={styles.avatarEditBadge}>
+                <Text style={styles.avatarEditBadgeText}>✏️</Text>
+              </View>
+            </TouchableOpacity>
+
             <View style={styles.playerDetails}>
-              <Text style={styles.playerName}>{item.nombre}</Text>
+              {/* Nombre editable */}
+              {isEditingThisName ? (
+                <TextInput
+                  style={styles.playerNameInput}
+                  value={editingValue}
+                  onChangeText={setEditingValue}
+                  onBlur={() => confirmEdit(item.nombre)}
+                  onSubmitEditing={() => confirmEdit(item.nombre)}
+                  autoFocus
+                  maxLength={20}
+                  selectTextOnFocus
+                />
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setEditingName(item.nombre);
+                    setEditingValue(item.nombre);
+                  }}
+                >
+                  <Text style={styles.playerName}>{item.nombre}</Text>
+                </TouchableOpacity>
+              )}
+
               <View
                 style={[
                   styles.roleBadge,
@@ -130,6 +188,7 @@ export default function PlayersScreen({ navigation }) {
               </View>
             </View>
           </View>
+
           <View style={styles.playerActions}>
             {index > 0 && (
               <TouchableOpacity
@@ -259,7 +318,6 @@ export default function PlayersScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Info si no hay suficientes jugadores o demasiados */}
           {jugadores.length < 3 && (
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
@@ -271,7 +329,7 @@ export default function PlayersScreen({ navigation }) {
           {/* Lista de jugadores */}
           <View style={styles.playersList}>
             {jugadores.length === 0 ? (
-              <View style={styles.emptyState}></View>
+              <View style={styles.emptyState} />
             ) : (
               jugadores.map((j, idx) => (
                 <View key={`${j.nombre}-${idx}`}>{renderPlayer(j, idx)}</View>
@@ -279,6 +337,52 @@ export default function PlayersScreen({ navigation }) {
             )}
           </View>
         </ScrollView>
+
+        {/* Modal de selección de avatar */}
+        {editingAvatar && (
+          <View style={styles.avatarModalOverlay}>
+            <View style={styles.avatarModal}>
+              <Text style={styles.avatarModalTitle}>Cambiar avatar</Text>
+              <Text style={styles.avatarModalSubtitle}>
+                {jugadores.find((j) => j.nombre === editingAvatar)?.nombre}
+              </Text>
+              <FlatList
+                data={AVATARES}
+                keyExtractor={(_, i) => String(i)}
+                numColumns={4}
+                contentContainerStyle={styles.avatarGrid}
+                renderItem={({ item }) => {
+                  const currentImagen = jugadores.find(
+                    (j) => j.nombre === editingAvatar,
+                  )?.imagen;
+                  const isSelected = currentImagen === item;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => confirmAvatarChange(editingAvatar, item)}
+                      style={[
+                        styles.avatarOption,
+                        isSelected && styles.avatarOptionSelected,
+                      ]}
+                    >
+                      <Image source={item} style={styles.avatarOptionImage} />
+                      {isSelected && (
+                        <View style={styles.avatarOptionCheck}>
+                          <Text style={styles.avatarOptionCheckText}>✓</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+              <TouchableOpacity
+                style={styles.avatarModalClose}
+                onPress={() => setEditingAvatar(null)}
+              >
+                <Text style={styles.avatarModalCloseText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </ImageBackground>
   );
@@ -325,7 +429,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 60,
   },
-
   inputSection: {
     flexDirection: "row",
     gap: 10,
@@ -434,7 +537,7 @@ const styles = StyleSheet.create({
   playerCard: {
     backgroundColor: "#222",
     borderRadius: 14,
-    padding: 18,
+    padding: 10,
     borderWidth: 2,
     borderColor: "#888",
     shadowColor: "#888",
@@ -453,13 +556,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  avatarWrapper: {
+    position: "relative",
+  },
   avatar: {
-    width: 54,
-    height: 54,
+    width: 74,
+    height: 74,
     borderRadius: 10,
     backgroundColor: "#888",
     borderWidth: 2,
     borderColor: "#c0392b",
+  },
+  avatarEditBadge: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    backgroundColor: "#222",
+    borderRadius: 8,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#c0392b",
+  },
+  avatarEditBadgeText: {
+    fontSize: 10,
   },
   playerDetails: {
     flex: 1,
@@ -473,6 +595,16 @@ const styles = StyleSheet.create({
     textShadowColor: "#000",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  playerNameInput: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    borderBottomWidth: 2,
+    borderBottomColor: "#c0392b",
+    paddingVertical: 2,
+    minWidth: 120,
   },
   roleBadge: {
     paddingHorizontal: 10,
@@ -549,21 +681,100 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 60,
   },
-  emptyStateText: {
+
+  // Modal de avatar
+  avatarModalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.88)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 999,
+  },
+  avatarModal: {
+    backgroundColor: "#1a1a1a",
+    borderRadius: 16,
+    padding: 20,
+    width: "90%",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    maxHeight: "70%",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  avatarModalTitle: {
+    color: "#fff",
+    fontSize: 20,
     fontWeight: "900",
     fontFamily: "monospace",
-    marginBottom: 8,
-    textShadowColor: "#000",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textAlign: "center",
+    marginBottom: 4,
+    letterSpacing: 1,
   },
-  emptyStateSubtext: {
-    color: "#ffffff",
-    fontSize: 15,
+  avatarModalSubtitle: {
+    color: "#c0392b",
+    fontSize: 14,
     fontWeight: "700",
     fontFamily: "monospace",
-    textShadowColor: "#000",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  avatarGrid: {
+    alignItems: "center",
+    paddingBottom: 10,
+  },
+  avatarOption: {
+    margin: 6,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#555",
+    overflow: "visible",
+    position: "relative",
+  },
+  avatarOptionSelected: {
+    borderColor: "#c0392b",
+    transform: [{ scale: 1.1 }],
+  },
+  avatarOptionImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+  },
+  avatarOptionCheck: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#c0392b",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarOptionCheckText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  avatarModalClose: {
+    marginTop: 16,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#555",
+  },
+  avatarModalCloseText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "monospace",
+    letterSpacing: 1,
   },
 });

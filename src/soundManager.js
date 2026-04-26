@@ -15,7 +15,6 @@ export const initSounds = async () => {
       staysActiveInBackground: false,
       shouldDuckAndroid: true,
     });
-    console.log("Audio initialized successfully");
 
     // Preload sounds for faster playback
     await preloadSounds();
@@ -34,7 +33,6 @@ const preloadSounds = async () => {
     try {
       const { sound } = await Audio.Sound.createAsync(file);
       cachedSounds[name] = sound;
-      console.log(`Preloaded sound: ${name}`);
     } catch (error) {
       console.warn(`Error preloading ${name}:`, error.message);
     }
@@ -42,7 +40,13 @@ const preloadSounds = async () => {
 };
 
 export const updateSoundSettings = (settings) => {
+  const wasEnabled = soundSettings.enabled;
   soundSettings = { ...soundSettings, ...settings };
+
+  // Si cambió el estado de enabled, actuar sobre la música
+  if (settings.enabled !== undefined && settings.enabled !== wasEnabled) {
+    toggleBackgroundMusic(settings.enabled);
+  }
 };
 
 export const playSound = async (soundName) => {
@@ -86,10 +90,6 @@ export const playSound = async (soundName) => {
         await sound.playAsync();
       }
 
-      console.log(
-        `Playing sound: ${soundName} at volume ${soundSettings.sfxVolume}`,
-      );
-
       // Auto-unload after playing if it was newly created
       if (isNew) {
         sound.setOnPlaybackStatusUpdate(async (status) => {
@@ -111,13 +111,10 @@ export const playSound = async (soundName) => {
 
 export const playBackgroundMusic = async () => {
   try {
-    console.log("Starting background music playback...");
-
     if (backgroundSound) {
       try {
         await backgroundSound.stopAsync();
         await backgroundSound.unloadAsync();
-        console.log("Unloaded previous background sound");
       } catch (_e) {
         // Ignore cleanup errors
       }
@@ -127,14 +124,11 @@ export const playBackgroundMusic = async () => {
       require("../assets/audio/mandolina.mp3"),
     );
     try {
-      console.log("Created background sound, setting properties...");
       await sound.setIsLoopingAsync(true);
       const volumeToSet = soundSettings.backgroundVolume || 0.7;
       await sound.setVolumeAsync(volumeToSet);
-      console.log("Calling playAsync on background music...");
       await sound.playAsync();
       backgroundSound = sound;
-      console.log("✓ Background music playing at volume", volumeToSet);
     } catch (error) {
       console.warn("Error during background music setup:", error.message);
       await sound.unloadAsync();
@@ -148,7 +142,6 @@ export const updateBackgroundMusicVolume = async (volume) => {
   try {
     if (backgroundSound) {
       await backgroundSound.setVolumeAsync(volume);
-      console.log("Background music volume updated to", volume);
     }
   } catch (error) {
     console.warn("Error updating background music volume:", error.message);
@@ -181,7 +174,6 @@ export const stopBackgroundMusic = async () => {
       await backgroundSound.stopAsync();
       await backgroundSound.unloadAsync();
       backgroundSound = null;
-      console.log("Background music stopped");
     }
   } catch (error) {
     console.warn("Error stopping background music:", error.message);

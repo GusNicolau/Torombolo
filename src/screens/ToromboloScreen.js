@@ -10,50 +10,103 @@ import {
   View,
 } from "react-native";
 import { usePlayers } from "../context/PlayersContext";
+import { useSoundSettings } from "../context/SoundSettingsContext";
 import { playSound } from "../soundManager";
-// dimensions available if needed
 
-const CARTAS = {
-  "1Bastos": require("../../assets/cartas/1Bastos.png"),
-  "2Bastos": require("../../assets/cartas/2Bastos.png"),
-  "3Bastos": require("../../assets/cartas/3Bastos.png"),
-  "4Bastos": require("../../assets/cartas/4Bastos.png"),
-  "5Bastos": require("../../assets/cartas/5Bastos.png"),
-  "6Bastos": require("../../assets/cartas/6Bastos.png"),
-  "7Bastos": require("../../assets/cartas/7Bastos.png"),
-  "10Bastos": require("../../assets/cartas/10Bastos.png"),
-  "11Bastos": require("../../assets/cartas/11Bastos.png"),
-  "12Bastos": require("../../assets/cartas/12Bastos.png"),
-  "1Copas": require("../../assets/cartas/1Copas.png"),
-  "2Copas": require("../../assets/cartas/2Copas.png"),
-  "3Copas": require("../../assets/cartas/3Copas.png"),
-  "4Copas": require("../../assets/cartas/4Copas.png"),
-  "5Copas": require("../../assets/cartas/5Copas.png"),
-  "6Copas": require("../../assets/cartas/6Copas.png"),
-  "7Copas": require("../../assets/cartas/7Copas.png"),
-  "10Copas": require("../../assets/cartas/10Copas.png"),
-  "11Copas": require("../../assets/cartas/11Copas.png"),
-  "12Copas": require("../../assets/cartas/12Copas.png"),
-  "1Espadas": require("../../assets/cartas/1Espadas.png"),
-  "2Espadas": require("../../assets/cartas/2Espadas.png"),
-  "3Espadas": require("../../assets/cartas/3Espadas.png"),
-  "4Espadas": require("../../assets/cartas/4Espadas.png"),
-  "5Espadas": require("../../assets/cartas/5Espadas.png"),
-  "6Espadas": require("../../assets/cartas/6Espadas.png"),
-  "7Espadas": require("../../assets/cartas/7Espadas.png"),
-  "10Espadas": require("../../assets/cartas/10Espadas.png"),
-  "11Espadas": require("../../assets/cartas/11Espadas.png"),
-  "12Espadas": require("../../assets/cartas/12Espadas.png"),
-  "1Oros": require("../../assets/cartas/1Oros.png"),
-  "2Oros": require("../../assets/cartas/2Oros.png"),
-  "3Oros": require("../../assets/cartas/3Oros.png"),
-  "4Oros": require("../../assets/cartas/4Oros.png"),
-  "5Oros": require("../../assets/cartas/5Oros.png"),
-  "6Oros": require("../../assets/cartas/6Oros.png"),
-  "7Oros": require("../../assets/cartas/7Oros.png"),
-  "10Oros": require("../../assets/cartas/10Oros.png"),
-  "11Oros": require("../../assets/cartas/11Oros.png"),
-  "12Oros": require("../../assets/cartas/12Oros.png"),
+// dimensions available if needed
+const CARTAS_BARAJA = {
+  cartas: {
+    // Bastos
+    "1Bastos": require("../../assets/cartas/1Bastos.png"),
+    "2Bastos": require("../../assets/cartas/2Bastos.png"),
+    "3Bastos": require("../../assets/cartas/3Bastos.png"),
+    "4Bastos": require("../../assets/cartas/4Bastos.png"),
+    "5Bastos": require("../../assets/cartas/5Bastos.png"),
+    "6Bastos": require("../../assets/cartas/6Bastos.png"),
+    "7Bastos": require("../../assets/cartas/7Bastos.png"),
+    "10Bastos": require("../../assets/cartas/10Bastos.png"),
+    "11Bastos": require("../../assets/cartas/11Bastos.png"),
+    "12Bastos": require("../../assets/cartas/12Bastos.png"),
+    // Copas
+    "1Copas": require("../../assets/cartas/1Copas.png"),
+    "2Copas": require("../../assets/cartas/2Copas.png"),
+    "3Copas": require("../../assets/cartas/3Copas.png"),
+    "4Copas": require("../../assets/cartas/4Copas.png"),
+    "5Copas": require("../../assets/cartas/5Copas.png"),
+    "6Copas": require("../../assets/cartas/6Copas.png"),
+    "7Copas": require("../../assets/cartas/7Copas.png"),
+    "10Copas": require("../../assets/cartas/10Copas.png"),
+    "11Copas": require("../../assets/cartas/11Copas.png"),
+    "12Copas": require("../../assets/cartas/12Copas.png"),
+    // Espadas
+    "1Espadas": require("../../assets/cartas/1Espadas.png"),
+    "2Espadas": require("../../assets/cartas/2Espadas.png"),
+    "3Espadas": require("../../assets/cartas/3Espadas.png"),
+    "4Espadas": require("../../assets/cartas/4Espadas.png"),
+    "5Espadas": require("../../assets/cartas/5Espadas.png"),
+    "6Espadas": require("../../assets/cartas/6Espadas.png"),
+    "7Espadas": require("../../assets/cartas/7Espadas.png"),
+    "10Espadas": require("../../assets/cartas/10Espadas.png"),
+    "11Espadas": require("../../assets/cartas/11Espadas.png"),
+    "12Espadas": require("../../assets/cartas/12Espadas.png"),
+    // Oros
+    "1Oros": require("../../assets/cartas/1Oros.png"),
+    "2Oros": require("../../assets/cartas/2Oros.png"),
+    "3Oros": require("../../assets/cartas/3Oros.png"),
+    "4Oros": require("../../assets/cartas/4Oros.png"),
+    "5Oros": require("../../assets/cartas/5Oros.png"),
+    "6Oros": require("../../assets/cartas/6Oros.png"),
+    "7Oros": require("../../assets/cartas/7Oros.png"),
+    "10Oros": require("../../assets/cartas/10Oros.png"),
+    "11Oros": require("../../assets/cartas/11Oros.png"),
+    "12Oros": require("../../assets/cartas/12Oros.png"),
+  },
+  baraja: {
+    // Bastos
+    "1Bastos": require("../../assets/baraja/1Bastos.png"),
+    "2Bastos": require("../../assets/baraja/2Bastos.png"),
+    "3Bastos": require("../../assets/baraja/3Bastos.png"),
+    "4Bastos": require("../../assets/baraja/4Bastos.png"),
+    "5Bastos": require("../../assets/baraja/5Bastos.png"),
+    "6Bastos": require("../../assets/baraja/6Bastos.png"),
+    "7Bastos": require("../../assets/baraja/7Bastos.png"),
+    "10Bastos": require("../../assets/baraja/10Bastos.png"),
+    "11Bastos": require("../../assets/baraja/11Bastos.png"),
+    "12Bastos": require("../../assets/baraja/12Bastos.png"),
+    // Copas
+    "1Copas": require("../../assets/baraja/1Copas.png"),
+    "2Copas": require("../../assets/baraja/2Copas.png"),
+    "3Copas": require("../../assets/baraja/3Copas.png"),
+    "4Copas": require("../../assets/baraja/4Copas.png"),
+    "5Copas": require("../../assets/baraja/5Copas.png"),
+    "6Copas": require("../../assets/baraja/6Copas.png"),
+    "7Copas": require("../../assets/baraja/7Copas.png"),
+    "10Copas": require("../../assets/baraja/10Copas.png"),
+    "11Copas": require("../../assets/baraja/11Copas.png"),
+    "12Copas": require("../../assets/baraja/12Copas.png"),
+    // Espadas
+    "1Espadas": require("../../assets/baraja/1Espadas.png"),
+    "2Espadas": require("../../assets/baraja/2Espadas.png"),
+    "3Espadas": require("../../assets/baraja/3Espadas.png"),
+    "4Espadas": require("../../assets/baraja/4Espadas.png"),
+    "5Espadas": require("../../assets/baraja/5Espadas.png"),
+    "6Espadas": require("../../assets/baraja/6Espadas.png"),
+    "7Espadas": require("../../assets/baraja/7Espadas.png"),
+    "10Espadas": require("../../assets/baraja/10Espadas.png"),
+    "11Espadas": require("../../assets/baraja/11Espadas.png"),
+    "12Espadas": require("../../assets/baraja/12Espadas.png"),
+    // Oros
+    "1Oros": require("../../assets/baraja/1Oros.png"),
+    "2Oros": require("../../assets/baraja/2Oros.png"),
+    "3Oros": require("../../assets/baraja/3Oros.png"),
+    "4Oros": require("../../assets/baraja/4Oros.png"),
+    "5Oros": require("../../assets/baraja/5Oros.png"),
+    "6Oros": require("../../assets/baraja/6Oros.png"),
+    "7Oros": require("../../assets/baraja/7Oros.png"),
+    "10Oros": require("../../assets/baraja/10Oros.png"),
+    "11Oros": require("../../assets/baraja/11Oros.png"),
+    "12Oros": require("../../assets/baraja/12Oros.png"),
+  },
 };
 
 const PALOS = ["Bastos", "Copas", "Espadas", "Oros"];
@@ -76,7 +129,7 @@ const BEBIDAS = [
   require("../../assets/bebidas/Bebida13.png"),
 ];
 
-function crearBaraja() {
+function crearBaraja(cartas) {
   const baraja = [];
   PALOS.forEach((palo) => {
     for (let valor = 1; valor <= 12; valor++) {
@@ -86,7 +139,7 @@ function crearBaraja() {
         valor,
         palo,
         tipo: valor <= 7 ? "numero" : "figura",
-        imagen: CARTAS[key],
+        imagen: cartas[key],
       });
     }
   });
@@ -95,12 +148,16 @@ function crearBaraja() {
 
 export default function ToromboloScreen({ navigation, route }) {
   const { jugadores } = usePlayers();
+  const { barajaSeleccionada } = useSoundSettings(); // ← añade esto
+
+  // ← CARTAS debe estar aquí dentro, usando el hook
+  const CARTAS = CARTAS_BARAJA[barajaSeleccionada] ?? CARTAS_BARAJA["cartas"];
   const loserIndex = route?.params?.loserIndex ?? 0;
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(loserIndex);
   const loser = jugadores[currentPlayerIndex];
 
   // Minigame state
-  const [tDeck, setTDeck] = useState(crearBaraja());
+  const [tDeck, setTDeck] = useState(() => crearBaraja(CARTAS));
   const [tCards, setTCards] = useState([]); // historial de cartas reveladas recientes
   const [tDiscarded, setTDiscarded] = useState([]); // monton en tapete (visualmente acumulado)
   const [tStep, setTStep] = useState(1); // 1..4 pruebas

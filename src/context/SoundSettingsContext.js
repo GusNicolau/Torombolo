@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 import { AppState } from "react-native";
+import { updateSoundSettings } from "../soundManager"; // añade este import
 
 const SoundSettingsContext = createContext();
 
@@ -9,10 +10,13 @@ export const SoundSettingsProvider = ({ children }) => {
   const [backgroundVolume, setBackgroundVolume] = useState(0.7);
   const [sfxVolume, setSfxVolume] = useState(1);
   const [appState, setAppState] = useState(AppState.currentState);
+  const [barajaSeleccionada, setBarajaSeleccionada] = useState("cartas");
 
   // Load settings from storage on mount
   useEffect(() => {
     const loadSettings = async () => {
+      const baraja = await AsyncStorage.getItem("barajaSeleccionada");
+      if (baraja !== null) setBarajaSeleccionada(baraja);
       try {
         if (!AsyncStorage.getItem) {
           console.warn("AsyncStorage not available, using defaults");
@@ -44,6 +48,16 @@ export const SoundSettingsProvider = ({ children }) => {
     return () => subscription.remove();
   }, [soundEnabled]);
 
+  const updateBaraja = async (baraja) => {
+    setBarajaSeleccionada(baraja); // ← esto debe ejecutarse SIEMPRE
+    try {
+      await AsyncStorage.setItem("barajaSeleccionada", baraja);
+    } catch (error) {
+      console.warn("Error saving baraja:", error.message);
+      // El estado ya se actualizó arriba, el error solo afecta a la persistencia
+    }
+  };
+
   const handleAppStateChange = async (nextAppState) => {
     if (appState.match(/inactive|background/) && nextAppState === "active") {
       // App has come to foreground - you can restart music if needed
@@ -56,10 +70,16 @@ export const SoundSettingsProvider = ({ children }) => {
   const toggleSound = async () => {
     const newState = !soundEnabled;
     setSoundEnabled(newState);
+
+    // Esto ahora también para/reanuda la música automáticamente
+    updateSoundSettings({
+      enabled: newState,
+      sfxVolume,
+      backgroundVolume,
+    });
+
     try {
-      if (AsyncStorage.setItem) {
-        await AsyncStorage.setItem("soundEnabled", JSON.stringify(newState));
-      }
+      await AsyncStorage.setItem("soundEnabled", JSON.stringify(newState));
     } catch (error) {
       console.warn("Error saving sound enabled state:", error.message);
     }
@@ -95,6 +115,8 @@ export const SoundSettingsProvider = ({ children }) => {
     sfxVolume,
     updateSfxVolume,
     appState,
+    barajaSeleccionada,
+    updateBaraja,
   };
 
   return (
