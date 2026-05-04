@@ -29,6 +29,8 @@ const avatares = [
   { nombre: "Avatar 4", imagen: require("../../assets/avatares/Avatar4.png") },
   { nombre: "Avatar 5", imagen: require("../../assets/avatares/Avatar5.png") },
   { nombre: "Avatar 6", imagen: require("../../assets/avatares/Avatar6.png") },
+  { nombre: "Avatar 7", imagen: require("../../assets/avatares/Avatar7.png") },
+  { nombre: "Avatar 8", imagen: require("../../assets/avatares/Avatar8.png") },
 ];
 
 export default function MoustacheScreen({ navigation }) {

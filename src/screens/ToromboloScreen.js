@@ -112,6 +112,7 @@ const CARTAS_BARAJA = {
 const PALOS = ["Bastos", "Copas", "Espadas", "Oros"];
 const TAPETE = require("../../assets/tapete/Tapete2.png");
 const CERVEZA = require("../../assets/bebidas/Cerves.png");
+const TITULO = require("../../assets/images/Titulo.png");
 
 const BEBIDAS = [
   require("../../assets/bebidas/Bebida1.png"),
@@ -399,7 +400,7 @@ export default function ToromboloScreen({ navigation, route }) {
             <Image source={loser.imagen} style={styles.playerIcon} />
           )}
           <View>
-            <Text style={styles.title}>Torombolo</Text>
+            <Image source={TITULO} style={styles.titleImage} />
             <Text style={styles.subtitle}>
               {loser?.nombre || `Jugador ${loserIndex + 1}`}
             </Text>
@@ -422,13 +423,7 @@ export default function ToromboloScreen({ navigation, route }) {
         ]}
       >
         <TouchableOpacity
-          style={styles.btn}
-          onPress={() => navigation.navigate("Menu")}
-        >
-          <Text style={styles.btnText}>Finalizar partida</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.btn}
+          style={styles.tutorialSmallBtn}
           onPress={() => {
             setShowTutorial(true);
             tutorialFadeAnim.setValue(0);
@@ -439,9 +434,7 @@ export default function ToromboloScreen({ navigation, route }) {
             }).start();
           }}
         >
-          <Text style={[styles.btnText, { fontSize: 28, fontWeight: "bold" }]}>
-            ?
-          </Text>
+          <Text style={styles.tutorialSmallBtnText}>?</Text>
         </TouchableOpacity>
       </View>
 
@@ -624,21 +617,33 @@ export default function ToromboloScreen({ navigation, route }) {
             >
               <Text style={styles.tutorialCloseText}>✕</Text>
             </TouchableOpacity>
-            <Text style={styles.tutorialTitle}>Tutorial - Torombolo</Text>
-            <ScrollView style={styles.tutorialScroll}>
+            <Text style={styles.tutorialTitle}>Tutorial</Text>
+            <ScrollView
+              style={styles.tutorialScroll}
+              showsVerticalScrollIndicator={true}
+            >
               <Text style={styles.tutorialText}>{`El Torombolo tiene 4 pruebas:
 
 1️⃣ PAR/IMPAR
 Adivina si la siguiente carta será par o impar.
 
 2️⃣ ARRIBA/ABAJO/IGUAL
-Compara con la carta anterior.
+Compara con la carta anterior. Elige si la próxima será más alta, más baja o igual.
 
 3️⃣ DENTRO/FUERA/IGUAL
-La carta debe estar entre las dos anteriores.
+La carta debe estar entre las dos anteriores o fuera.
 
 4️⃣ PALO
 Adivina el palo (Bastos, Copas, Espadas, Oros).
+
+⚠️ REGLAS IMPORTANTES:
+
+🍻 Si sale un 1: ¡Beben TODOS los jugadores!
+
+👑 Si es la última carta:
+• Si acierta y sale un 1 (As): El juego continúa con el jugador de la DERECHA
+• Si acierta y sale un Rey: El juego continúa con el jugador de la IZQUIERDA
+• Si en cualquier caso la carta es un 1 o Rey como última carta: El Torombolo se reinicia para el siguiente jugador
 
 ⚠️ Cada fallo: ¡A beber!
 🎉 Completa las 4 pruebas para ganar.`}</Text>
@@ -653,7 +658,7 @@ Adivina el palo (Bastos, Copas, Espadas, Oros).
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topRow: {
-    paddingTop: 40,
+    paddingTop: -10,
     paddingBottom: 12,
     alignItems: "center",
   },
@@ -668,7 +673,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginTop: 32, // Lower the header (avatar + title)
+    marginTop: 8,
   },
   playerIcon: {
     width: 100,
@@ -679,12 +684,17 @@ const styles = StyleSheet.create({
     marginTop: 8, // Lower the avatar slightly
   },
   title: { color: "#fff", fontSize: 38, fontWeight: "700" },
-  subtitle: { color: "#ddd", fontSize: 18, marginTop: 4, fontWeight: "600" },
-  counterText: { color: "#fff", fontSize: 14, marginTop: 6 },
+  titleImage: {
+    top: 20,
+    width: 245,
+    height: 150,
+    resizeMode: "absolute",
+  },
+  subtitle: { color: "#ddd", fontSize: 16, marginTop: -8, fontWeight: "600" },
+  counterText: { color: "#fff", fontSize: 12, marginTop: 2 },
   tTopSequence: {
     height: 100,
-    paddingHorizontal: 16,
-    marginTop: 20,
+    marginTop: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -692,9 +702,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 180,
+    paddingBottom: 10,
   },
   tDiscardPile: {
+    top: -50,
     width: 280,
     height: 160,
     alignItems: "center",
@@ -972,12 +983,33 @@ const styles = StyleSheet.create({
   },
   tutorialTitle: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
+    textAlign: "center",
+  },
+  tutorialSmallBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#222",
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+  },
+  tutorialSmallBtnText: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    fontFamily: "monospace",
   },
   tutorialScroll: {
-    maxHeight: 300,
+    maxHeight: 400,
   },
   tutorialText: {
     color: "#ddd",

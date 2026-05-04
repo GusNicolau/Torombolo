@@ -29,6 +29,8 @@ const AVATARES = [
   require("../../assets/avatares/Avatar4.png"),
   require("../../assets/avatares/Avatar5.png"),
   require("../../assets/avatares/Avatar6.png"),
+  require("../../assets/avatares/Avatar7.png"),
+  require("../../assets/avatares/Avatar8.png"),
 ];
 
 export default function PlayersScreen({ navigation }) {
@@ -97,20 +99,24 @@ export default function PlayersScreen({ navigation }) {
   };
 
   const movePlayerUp = (nombre) => {
-    const idx = jugadores.findIndex((j) => j.nombre === nombre);
-    if (idx <= 0) return;
-    const posiciones = ["top", "middle", "bottom"];
-    const currentPos = jugadores[idx].posicion;
-    const currentIdx = posiciones.indexOf(currentPos);
+    const posiciones =
+      jugadores.length === 4
+        ? ["top", "middle", "bottom", "left"]
+        : ["top", "middle", "bottom"];
+    const jugador = jugadores.find((j) => j.nombre === nombre);
+    if (!jugador) return;
+    const currentIdx = posiciones.indexOf(jugador.posicion);
     if (currentIdx > 0) moveJugador(nombre, posiciones[currentIdx - 1]);
   };
 
   const movePlayerDown = (nombre) => {
-    const idx = jugadores.findIndex((j) => j.nombre === nombre);
-    if (idx >= jugadores.length - 1) return;
-    const posiciones = ["top", "middle", "bottom"];
-    const currentPos = jugadores[idx].posicion;
-    const currentIdx = posiciones.indexOf(currentPos);
+    const posiciones =
+      jugadores.length === 4
+        ? ["top", "middle", "bottom", "left"]
+        : ["top", "middle", "bottom"];
+    const jugador = jugadores.find((j) => j.nombre === nombre);
+    if (!jugador) return;
+    const currentIdx = posiciones.indexOf(jugador.posicion);
     if (currentIdx < posiciones.length - 1)
       moveJugador(nombre, posiciones[currentIdx + 1]);
   };
@@ -138,6 +144,11 @@ export default function PlayersScreen({ navigation }) {
   const renderPlayer = (item, index) => {
     const avatarSource = item.imagen || AVATARES[0];
     const isEditingThisName = editingName === item.nombre;
+    const posiciones =
+      jugadores.length === 4
+        ? ["top", "middle", "bottom", "left"]
+        : ["top", "middle", "bottom"];
+    const currentPosIdx = posiciones.indexOf(item.posicion);
 
     return (
       <View style={styles.playerCard}>
@@ -190,7 +201,7 @@ export default function PlayersScreen({ navigation }) {
           </View>
 
           <View style={styles.playerActions}>
-            {index > 0 && (
+            {currentPosIdx > 0 && (
               <TouchableOpacity
                 style={styles.moveButton}
                 onPress={() => movePlayerUp(item.nombre)}
@@ -198,7 +209,7 @@ export default function PlayersScreen({ navigation }) {
                 <Text style={styles.moveButtonText}>⬆</Text>
               </TouchableOpacity>
             )}
-            {index < jugadores.length - 1 && (
+            {currentPosIdx < posiciones.length - 1 && (
               <TouchableOpacity
                 style={styles.moveButton}
                 onPress={() => movePlayerDown(item.nombre)}
