@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
@@ -7,6 +8,7 @@ export default function CoinFlipper({
   onFlipComplete,
 }) {
   const flipAnim = useRef(new Animated.Value(0)).current;
+  const resultScale = useRef(new Animated.Value(0)).current;
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
 
@@ -34,31 +36,39 @@ export default function CoinFlipper({
       }),
       Animated.delay(400),
     ]).start(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       setResult(randomResult);
       setRunning(false);
+      resultScale.setValue(0);
+      Animated.spring(resultScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 80,
+        useNativeDriver: true,
+      }).start();
       onFlipComplete && onFlipComplete(randomResult);
     });
   };
 
-  const spin = flipAnim.interpolate({
-    inputRange: [0, 900, 1080],
-    outputRange: ["0deg", "900deg", "1080deg"],
+  // Gira la cara real (no una capa invisible aparte), con perspectiva para
+  // que se note el giro en 3D. La cara trasera va siempre 180° detrás de
+  // la delantera; backfaceVisibility hace que cada una solo se vea cuando
+  // le toca "mirar" a cámara.
+  const frontSpin = flipAnim.interpolate({
+    inputRange: [0, 1080],
+    outputRange: ["0deg", "1080deg"],
+  });
+  const backSpin = flipAnim.interpolate({
+    inputRange: [0, 1080],
+    outputRange: ["180deg", "1260deg"],
   });
 
-  // Cara frontal: visible cuando rotación par de 180 (0, 360, 720, 1080...)
-  const frontOpacity = flipAnim.interpolate({
-    inputRange: [
-      0, 89, 90, 269, 270, 449, 450, 629, 630, 809, 810, 900, 901, 1080,
-    ],
-    outputRange: [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
-  });
-
-  // Cara trasera: visible cuando rotación impar de 180 (180, 540, 900...)
-  const backOpacity = flipAnim.interpolate({
-    inputRange: [
-      0, 89, 90, 269, 270, 449, 450, 629, 630, 809, 810, 900, 901, 1080,
-    ],
-    outputRange: [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+  // Estrecha la moneda cada 90° para simular que se ve de canto justo
+  // cuando backfaceVisibility cambia de cara, en vez de un corte seco.
+  const squeezeSteps = Array.from({ length: 13 }, (_, i) => i * 90);
+  const squeeze = flipAnim.interpolate({
+    inputRange: squeezeSteps,
+    outputRange: squeezeSteps.map((_, i) => (i % 2 === 0 ? 1 : 0.05)),
   });
 
   return (
@@ -73,7 +83,11 @@ export default function CoinFlipper({
               width: size,
               height: size,
               borderRadius: size / 2,
-              opacity: frontOpacity,
+              transform: [
+                { perspective: 1000 },
+                { rotateY: frontSpin },
+                { scaleX: squeeze },
+              ],
             },
           ]}
         >
@@ -92,7 +106,11 @@ export default function CoinFlipper({
               width: size,
               height: size,
               borderRadius: size / 2,
-              opacity: backOpacity,
+              transform: [
+                { perspective: 1000 },
+                { rotateY: backSpin },
+                { scaleX: squeeze },
+              ],
             },
           ]}
         >
@@ -101,28 +119,16 @@ export default function CoinFlipper({
             CRUZ
           </Text>
         </Animated.View>
-
-        {/* Capa de animación de giro (invisible, solo para el efecto) */}
-        <Animated.View
-          style={[
-            styles.coinSpin,
-            {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              transform: [{ rotateY: spin }],
-            },
-          ]}
-        />
       </View>
 
       {/* Resultado */}
       <View style={styles.resultContainer}>
         {result && (
-          <View
+          <Animated.View
             style={[
               styles.resultBox,
               result === "cara" ? styles.caraResult : styles.cruzResult,
+              { transform: [{ scale: resultScale }] },
             ]}
           >
             <Text style={styles.resultEmoji}>
@@ -131,7 +137,7 @@ export default function CoinFlipper({
             <Text style={styles.resultText}>
               {result === "cara" ? "¡CARA!" : "¡CRUZ!"}
             </Text>
-          </View>
+          </Animated.View>
         )}
       </View>
     </View>
@@ -153,6 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 6,
+    backfaceVisibility: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
@@ -166,10 +173,6 @@ const styles = StyleSheet.create({
   cruzFace: {
     backgroundColor: "#C0C0C0",
     borderColor: "#A0A0A0",
-  },
-  coinSpin: {
-    position: "absolute",
-    backgroundColor: "transparent",
   },
   coinEmoji: {
     marginBottom: 4,

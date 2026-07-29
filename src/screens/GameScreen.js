@@ -17,7 +17,6 @@ import {
   playBackgroundMusic,
   playSound,
   stopBackgroundMusic,
-  updateSoundSettings,
 } from "../soundManager";
 
 const CARTAS_BARAJA = {
@@ -119,6 +118,49 @@ const REVERSO = require("../../assets/cartas/reverso.jpg");
 const TAPETE = require("../../assets/tapete/Tapete2.png");
 const PALOS = ["Bastos", "Copas", "Espadas", "Oros"];
 
+// Reparto por posición (3 jugadores): izquierda=2-4, arriba=5-7, derecha=figuras
+const TUTORIAL_RULES_3P = [
+  {
+    icon: "⬅️",
+    title: "Izquierda: cartas 2, 3 y 4",
+    text: "Las cartas numéricas del 2 al 4 van al jugador de la izquierda.",
+  },
+  {
+    icon: "⬆️",
+    title: "Arriba: cartas 5, 6 y 7",
+    text: "Las cartas numéricas del 5 al 7 van al jugador de arriba.",
+  },
+  {
+    icon: "➡️",
+    title: "Derecha: Figuras",
+    text: "El 10, 11 y 12 (figuras) van al jugador de la derecha.",
+  },
+];
+
+// Reparto por palo (4 jugadores): izquierda=Oros, arriba=Copas, derecha=Espadas, abajo=Bastos
+const TUTORIAL_RULES_4P = [
+  {
+    icon: "⬅️",
+    title: "Izquierda: Oros",
+    text: "Todas las cartas de Oros van al jugador de la izquierda.",
+  },
+  {
+    icon: "⬆️",
+    title: "Arriba: Copas",
+    text: "Todas las cartas de Copas van al jugador de arriba.",
+  },
+  {
+    icon: "➡️",
+    title: "Derecha: Espadas",
+    text: "Todas las cartas de Espadas van al jugador de la derecha.",
+  },
+  {
+    icon: "⬇️",
+    title: "Abajo: Bastos",
+    text: "Todas las cartas de Bastos van al jugador de abajo.",
+  },
+];
+
 function crearBaraja(cartas) {
   const baraja = [];
   PALOS.forEach((palo) => {
@@ -137,8 +179,7 @@ function crearBaraja(cartas) {
 }
 export default function GameScreen({ navigation, route }) {
   const { jugadores } = usePlayers();
-  const { soundEnabled, sfxVolume, backgroundVolume, barajaSeleccionada } =
-    useSoundSettings();
+  const { barajaSeleccionada } = useSoundSettings();
   const numPlayers = route?.params?.numPlayers || 3;
 
   const players = jugadores.slice(0, numPlayers);
@@ -148,6 +189,7 @@ export default function GameScreen({ navigation, route }) {
   const [playerCards, setPlayerCards] = useState(Array(numPlayers).fill([]));
   const [revealedCard, setRevealedCard] = useState(null); // carta en grande
   const scaleAnim = useState(new Animated.Value(1))[0];
+  const targetAnim = useState(new Animated.Value(0))[0];
   // Final-phase state
   const [limit, setLimit] = useState(numPlayers === 4 ? 7 : 9);
   const [gameOver, setGameOver] = useState(false);
@@ -165,15 +207,6 @@ export default function GameScreen({ navigation, route }) {
   const [coinFlipping, setCoinFlipping] = useState(false);
   const [pendingCard, setPendingCard] = useState(null);
   const [revealedCardTarget, setRevealedCardTarget] = useState(null); // { player, index }
-
-  // Update sound settings when context changes
-  useEffect(() => {
-    updateSoundSettings({
-      enabled: soundEnabled,
-      sfxVolume,
-      backgroundVolume,
-    });
-  }, [soundEnabled, sfxVolume, backgroundVolume]);
 
   // Stop background music when game starts, resume when game ends
   useEffect(() => {
@@ -228,6 +261,14 @@ export default function GameScreen({ navigation, route }) {
     playSound("carta").catch((err) =>
       console.warn("Card sound error:", err?.message),
     );
+
+    targetAnim.setValue(0);
+    Animated.spring(targetAnim, {
+      toValue: 1,
+      friction: 6,
+      tension: 60,
+      useNativeDriver: true,
+    }).start();
 
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -420,26 +461,50 @@ export default function GameScreen({ navigation, route }) {
   const handleChoice = (choice) => {
     const currentPlayerIdx = coinCandidates[coinChooserIdx];
     const updated = { ...coinChoices, [currentPlayerIdx]: choice };
-    setCoinChoices(updated);
+    const nextChooserIdx = coinChooserIdx + 1;
+    const remaining = coinCandidates.length - nextChooserIdx;
 
-    if (coinCandidates.length === 2 && coinChooserIdx === 0) {
-      // Solo 2 jugadores: el segundo elige el contrario automáticamente
-      const other = coinCandidates[1];
-      updated[other] = choice === "cara" ? "cruz" : "cara";
+    // Si solo queda un jugador por elegir y todos los anteriores coinciden
+    // en el mismo lado, no le dejamos duplicar: se le asigna directamente
+    // el lado que falta y se lanza la moneda, sin pedirle que toque un
+    // botón (así el lanzamiento siempre es decisivo). Con 2 jugadores esto
+    // se cumple siempre nada más elegir el primero.
+    if (remaining === 1 && new Set(Object.values(updated)).size === 1) {
+      const lastIdx = coinCandidates[nextChooserIdx];
+      updated[lastIdx] = choice === "cara" ? "cruz" : "cara";
       setCoinChoices(updated);
       setCoinFlipping(true);
       return;
     }
 
-    // Avanzar al siguiente o lanzar si ya eligieron todos
-    if (coinChooserIdx + 1 < coinCandidates.length) {
-      setCoinChooserIdx((i) => i + 1);
+    setCoinChoices(updated);
+    if (nextChooserIdx < coinCandidates.length) {
+      setCoinChooserIdx(nextChooserIdx);
     } else {
       setCoinFlipping(true);
     }
   };
 
-  const tutorialContent = `Reglas del juego:\n\n• Cartas 1-7: Números\n  - 1: ¡Especial! Se lanza una moneda\n    • La moneda decide el ganador\n    • Se la lleva el jugador con menos cartas\n  - 2-4: Jugador izquierda\n  - 5-7: Jugador derecha\n\n• Cartas 10-12: Figuras\n  - Van al jugador derecha\n\n• El juego termina cuando un jugador alcanza el límite.\n\n• Si dos jugadores alcanzan el límite:\n  - El que tenga menos cartas pierde\n  - Si empatan, el límite sube +1`;
+  // El reparto de cartas depende del número de jugadores, así que el
+  // tutorial también: por posición (3) o por palo (4).
+  const tutorialRules = [
+    ...(numPlayers === 4 ? TUTORIAL_RULES_4P : TUTORIAL_RULES_3P),
+    {
+      icon: "🪙",
+      title: "El 1 es especial",
+      text: "Se lanza una moneda entre los jugadores con menos cartas. Quien acierte cara o cruz se la lleva.",
+    },
+    {
+      icon: "🏁",
+      title: "Fin de la partida",
+      text: `Termina en cuanto algún jugador alcanza el límite de cartas (ahora mismo: ${limit}).`,
+    },
+    {
+      icon: "⚖️",
+      title: "Empate en el límite",
+      text: "Si varios llegan a la vez, pierde quien tenga menos cartas. Si también empatan ahí, el límite sube +1.",
+    },
+  ];
 
   const { width, height } = Dimensions.get("window");
   // Posiciones para 3 y 4 jugadores
@@ -585,7 +650,29 @@ export default function GameScreen({ navigation, route }) {
         >
           {/* Indicador del jugador destino */}
           {revealedCardTarget?.player && (
-            <View style={styles.revealedTarget}>
+            <Animated.View
+              style={[
+                styles.revealedTarget,
+                {
+                  opacity: targetAnim,
+                  transform: [
+                    {
+                      translateY: targetAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-16, 0],
+                      }),
+                    },
+                    {
+                      scale: targetAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.85, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.revealedTargetLabel}>Le toca a</Text>
               <Image
                 source={revealedCardTarget.player.imagen}
                 style={styles.revealedTargetAvatar}
@@ -593,25 +680,57 @@ export default function GameScreen({ navigation, route }) {
               <Text style={styles.revealedTargetName}>
                 {revealedCardTarget.player.nombre}
               </Text>
-            </View>
+            </Animated.View>
           )}
           {revealedCardTarget?.index === -1 && (
-            <View style={styles.revealedTarget}>
-              <Text style={styles.revealedTargetCoin}>🪙 ¡Duelo!</Text>
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                {revealedCardTarget.candidates?.map((pIdx) => (
-                  <View key={pIdx} style={{ alignItems: "center" }}>
-                    <Image
-                      source={players[pIdx].imagen}
-                      style={styles.revealedTargetAvatarSmall}
-                    />
-                    <Text style={styles.revealedTargetNameSmall}>
-                      {players[pIdx].nombre}
-                    </Text>
+            <Animated.View
+              style={[
+                styles.revealedTarget,
+                styles.revealedTargetDuel,
+                {
+                  opacity: targetAnim,
+                  transform: [
+                    {
+                      translateY: targetAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-16, 0],
+                      }),
+                    },
+                    {
+                      scale: targetAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.85, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.revealedTargetCoinBadge}>
+                <Text style={styles.revealedTargetCoinIcon}>🪙</Text>
+              </View>
+              <Text style={styles.revealedTargetCoinLabel}>
+                ¡Duelo por la carta!
+              </Text>
+              <View style={styles.revealedTargetDuelRow}>
+                {revealedCardTarget.candidates?.map((pIdx, i) => (
+                  <View key={pIdx} style={styles.revealedTargetDuelPair}>
+                    <View style={{ alignItems: "center" }}>
+                      <Image
+                        source={players[pIdx].imagen}
+                        style={styles.revealedTargetAvatarSmall}
+                      />
+                      <Text style={styles.revealedTargetNameSmall}>
+                        {players[pIdx].nombre}
+                      </Text>
+                    </View>
+                    {i < revealedCardTarget.candidates.length - 1 && (
+                      <Text style={styles.revealedTargetVs}>VS</Text>
+                    )}
                   </View>
                 ))}
               </View>
-            </View>
+            </Animated.View>
           )}
           <Animated.Image
             source={revealedCard.imagen}
@@ -636,18 +755,31 @@ export default function GameScreen({ navigation, route }) {
                     style={styles.coinAvatarBox}
                     pointerEvents="box-none"
                   >
-                    <Image
-                      source={p?.imagen}
-                      style={[
-                        styles.coinAvatar,
-                        isActive && styles.coinAvatarActive,
-                      ]}
-                      pointerEvents="none"
-                    />
+                    <View style={styles.coinAvatarWrap}>
+                      <Image
+                        source={p?.imagen}
+                        style={[
+                          styles.coinAvatar,
+                          isActive && styles.coinAvatarActive,
+                        ]}
+                        pointerEvents="none"
+                      />
+                      {chosen && (
+                        <View
+                          style={[
+                            styles.coinChoiceBadge,
+                            chosen === "cara"
+                              ? styles.coinChoiceBadgeCara
+                              : styles.coinChoiceBadgeCruz,
+                          ]}
+                        >
+                          <Text style={styles.coinChoiceBadgeIcon}>
+                            {chosen === "cara" ? "👑" : "✦"}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.coinAvatarName}>{p?.nombre}</Text>
-                    {chosen && (
-                      <Text style={styles.coinChoiceText}>{chosen}</Text>
-                    )}
                   </View>
                 );
               })}
@@ -786,8 +918,23 @@ export default function GameScreen({ navigation, route }) {
             >
               <Text style={styles.tutorialCloseText}>✕</Text>
             </TouchableOpacity>
-            <Text style={styles.tutorialTitle}>Tutorial</Text>
-            <Text style={styles.tutorialText}>{tutorialContent}</Text>
+            <Text style={styles.tutorialTitle}>📖 Cómo jugar</Text>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.tutorialScroll}
+            >
+              {tutorialRules.map((rule, i) => (
+                <View key={i} style={styles.tutorialRuleCard}>
+                  <View style={styles.tutorialRuleIconBox}>
+                    <Text style={styles.tutorialRuleIcon}>{rule.icon}</Text>
+                  </View>
+                  <View style={styles.tutorialRuleTextBox}>
+                    <Text style={styles.tutorialRuleTitle}>{rule.title}</Text>
+                    <Text style={styles.tutorialRuleText}>{rule.text}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
           </Animated.View>
         </View>
       )}
@@ -1043,37 +1190,82 @@ const styles = StyleSheet.create({
   },
   tutorialPopup: {
     backgroundColor: "#1a1a1a",
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
+    paddingTop: 24,
     maxHeight: "80%",
-    width: "85%",
+    width: "88%",
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: "#FF6B35",
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
   },
   tutorialClose: {
     position: "absolute",
     top: 10,
     right: 10,
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    zIndex: 1,
   },
   tutorialCloseText: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
   },
   tutorialTitle: {
-    color: "#fff",
+    color: "#FF6B35",
     fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 12,
+    fontWeight: "900",
+    marginBottom: 16,
+    textAlign: "center",
+    letterSpacing: 0.5,
   },
-  tutorialText: {
-    color: "#ddd",
-    fontSize: 13,
-    lineHeight: 20,
+  tutorialScroll: {
+    maxHeight: 420,
+  },
+  tutorialRuleCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(255, 107, 53, 0.08)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 53, 0.25)",
+  },
+  tutorialRuleIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 107, 53, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  tutorialRuleIcon: {
+    fontSize: 20,
+  },
+  tutorialRuleTextBox: {
+    flex: 1,
+  },
+  tutorialRuleTitle: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  tutorialRuleText: {
+    color: "#ccc",
+    fontSize: 12,
+    lineHeight: 17,
   },
   btn: {
     backgroundColor: "#FF6B35",
@@ -1123,6 +1315,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     pointerEvents: "box-none",
   },
+  coinAvatarWrap: {
+    position: "relative",
+  },
   coinAvatar: {
     width: 70,
     height: 70,
@@ -1132,9 +1327,13 @@ const styles = StyleSheet.create({
     pointerEvents: "none",
   },
   coinAvatarActive: {
-    borderColor: "#FFD700",
+    borderColor: "#fff",
     borderWidth: 3,
-    backgroundColor: "rgba(255, 215, 0, 0.1)",
+    shadowColor: "#fff",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    elevation: 10,
   },
   coinAvatarName: {
     color: "#fff",
@@ -1143,11 +1342,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: "center",
   },
-  coinChoiceText: {
-    color: "#FF6B35",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginTop: 2,
+  coinChoiceBadge: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#1a1a1a",
+  },
+  coinChoiceBadgeCara: {
+    backgroundColor: "#FFD700",
+  },
+  coinChoiceBadgeCruz: {
+    backgroundColor: "#C0C0C0",
+  },
+  coinChoiceBadgeIcon: {
+    fontSize: 13,
   },
   coinCenter: {
     flex: 1,
@@ -1175,12 +1389,25 @@ const styles = StyleSheet.create({
   revealedTarget: {
     alignItems: "center",
     marginBottom: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(20,20,20,0.85)",
     borderRadius: 16,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderWidth: 2,
     borderColor: "#FF6B35",
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  revealedTargetLabel: {
+    color: "#FF6B35",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 8,
   },
   revealedTargetAvatar: {
     width: 70,
@@ -1196,10 +1423,44 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  revealedTargetCoin: {
-    color: "#FFD700",
+  revealedTargetDuel: {
+    borderColor: "#FFD700",
+    shadowColor: "#FFD700",
+  },
+  revealedTargetCoinBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    borderWidth: 2,
+    borderColor: "#FFD700",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  revealedTargetCoinIcon: {
     fontSize: 22,
-    fontWeight: "bold",
+  },
+  revealedTargetCoinLabel: {
+    color: "#FFD700",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  revealedTargetDuelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  revealedTargetDuelPair: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  revealedTargetVs: {
+    color: "#FFD700",
+    fontSize: 12,
+    fontWeight: "900",
+    marginHorizontal: 10,
   },
   revealedTargetAvatarSmall: {
     width: 50,

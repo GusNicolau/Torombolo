@@ -11,28 +11,43 @@ export const SoundSettingsProvider = ({ children }) => {
   const [sfxVolume, setSfxVolume] = useState(1);
   const [appState, setAppState] = useState(AppState.currentState);
   const [barajaSeleccionada, setBarajaSeleccionada] = useState("cartas");
+  const [isReady, setIsReady] = useState(false);
 
   // Load settings from storage on mount
   useEffect(() => {
     const loadSettings = async () => {
-      const baraja = await AsyncStorage.getItem("barajaSeleccionada");
-      if (baraja !== null) setBarajaSeleccionada(baraja);
       try {
-        if (!AsyncStorage.getItem) {
-          console.warn("AsyncStorage not available, using defaults");
-          return;
-        }
-        const [enabled, bgVol, sfxVol] = await Promise.all([
+        const baraja = await AsyncStorage.getItem("barajaSeleccionada");
+        if (baraja !== null) setBarajaSeleccionada(baraja);
+
+        const [enabledRaw, bgVolRaw, sfxVolRaw] = await Promise.all([
           AsyncStorage.getItem("soundEnabled"),
           AsyncStorage.getItem("backgroundVolume"),
           AsyncStorage.getItem("sfxVolume"),
         ]);
 
-        if (enabled !== null) setSoundEnabled(JSON.parse(enabled));
-        if (bgVol !== null) setBackgroundVolume(parseFloat(bgVol));
-        if (sfxVol !== null) setSfxVolume(parseFloat(sfxVol));
+        const enabled =
+          enabledRaw !== null ? JSON.parse(enabledRaw) : soundEnabled;
+        const bgVol =
+          bgVolRaw !== null ? parseFloat(bgVolRaw) : backgroundVolume;
+        const sfxVol =
+          sfxVolRaw !== null ? parseFloat(sfxVolRaw) : sfxVolume;
+
+        setSoundEnabled(enabled);
+        setBackgroundVolume(bgVol);
+        setSfxVolume(sfxVol);
+
+        // Sincroniza el motor de audio ya mismo: App.js arranca la música
+        // de fondo en cuanto esto resuelve, y debe respetar lo guardado.
+        updateSoundSettings({
+          enabled,
+          backgroundVolume: bgVol,
+          sfxVolume: sfxVol,
+        });
       } catch (error) {
         console.warn("Error loading sound settings:", error.message);
+      } finally {
+        setIsReady(true);
       }
     };
 
@@ -87,6 +102,11 @@ export const SoundSettingsProvider = ({ children }) => {
 
   const updateBackgroundVolume = async (volume) => {
     setBackgroundVolume(volume);
+    updateSoundSettings({
+      enabled: soundEnabled,
+      sfxVolume,
+      backgroundVolume: volume,
+    });
     try {
       if (AsyncStorage.setItem) {
         await AsyncStorage.setItem("backgroundVolume", volume.toString());
@@ -98,6 +118,11 @@ export const SoundSettingsProvider = ({ children }) => {
 
   const updateSfxVolume = async (volume) => {
     setSfxVolume(volume);
+    updateSoundSettings({
+      enabled: soundEnabled,
+      sfxVolume: volume,
+      backgroundVolume,
+    });
     try {
       if (AsyncStorage.setItem) {
         await AsyncStorage.setItem("sfxVolume", volume.toString());
@@ -117,6 +142,7 @@ export const SoundSettingsProvider = ({ children }) => {
     appState,
     barajaSeleccionada,
     updateBaraja,
+    isReady,
   };
 
   return (

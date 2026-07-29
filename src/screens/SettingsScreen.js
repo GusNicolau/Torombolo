@@ -41,132 +41,152 @@ export default function SettingsScreen({ navigation }) {
       imageStyle={{ resizeMode: "cover" }}
     >
       <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>◀ Volver</Text>
-        </TouchableOpacity>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.backButtonText}>◀ Volver</Text>
+          </TouchableOpacity>
+        </View>
 
         <ScrollView
           style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>⚙️ Ajustes</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title}>Ajustes</Text>
+            <View style={styles.titleDivider}>
+              <View style={styles.titleDividerLine} />
+              <Text style={styles.titleDividerIcon}>✦</Text>
+              <View style={styles.titleDividerLine} />
+            </View>
+          </View>
 
           {/* ── SECCIÓN BARAJA ── */}
-          <Text style={styles.sectionTitle}>🃏 Tipo de Baraja</Text>
-          <View style={styles.barajaSection}>
-            {BARAJAS.map((baraja) => {
-              const isSelected = barajaSeleccionada === baraja.id;
-              return (
-                <TouchableOpacity
-                  key={baraja.id}
-                  style={[
-                    styles.barajaBtn,
-                    isSelected && styles.barajaBtnSelected,
-                  ]}
-                  onPress={() => updateBaraja(baraja.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text
+          <View style={styles.panel}>
+            <Text style={styles.sectionTitle}>🃏 Tipo de Baraja</Text>
+            <View style={styles.barajaSection}>
+              {BARAJAS.map((baraja) => {
+                const isSelected = barajaSeleccionada === baraja.id;
+                return (
+                  <TouchableOpacity
+                    key={baraja.id}
                     style={[
-                      styles.barajaBtnLabel,
-                      isSelected && styles.barajaBtnLabelSelected,
+                      styles.barajaBtn,
+                      isSelected && styles.barajaBtnSelected,
                     ]}
+                    onPress={() => updateBaraja(baraja.id)}
+                    activeOpacity={0.8}
                   >
-                    {baraja.label}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.barajaBtnDesc,
-                      isSelected && styles.barajaBtnDescSelected,
-                    ]}
-                  >
-                    {baraja.descripcion}
-                  </Text>
-                  {isSelected && (
-                    <View style={styles.barajaCheck}>
-                      <Text style={styles.barajaCheckText}>✓</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
+                    <Text
+                      style={[
+                        styles.barajaBtnLabel,
+                        isSelected && styles.barajaBtnLabelSelected,
+                      ]}
+                    >
+                      {baraja.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.barajaBtnDesc,
+                        isSelected && styles.barajaBtnDescSelected,
+                      ]}
+                    >
+                      {baraja.descripcion}
+                    </Text>
+                    {isSelected && (
+                      <View style={styles.barajaCheck}>
+                        <Text style={styles.barajaCheckText}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* ── SECCIÓN SONIDO ── */}
-          <Text style={styles.sectionTitle}>🔊 Sonido</Text>
+          <View style={styles.panel}>
+            <Text style={styles.sectionTitle}>🔊 Sonido</Text>
 
-          {/* Toggle sonido */}
-          <View style={styles.soundToggleSection}>
+            {/* Toggle sonido */}
             <TouchableOpacity
               style={[
                 styles.soundToggle,
                 soundEnabled ? styles.soundOn : styles.soundOff,
               ]}
               onPress={toggleSound}
+              activeOpacity={0.85}
             >
               <Text style={styles.soundIcon}>{soundEnabled ? "🔊" : "🔇"}</Text>
-              <Text style={styles.soundToggleText}>
+              <Text
+                style={[
+                  styles.soundToggleText,
+                  soundEnabled
+                    ? styles.soundToggleTextOn
+                    : styles.soundToggleTextOff,
+                ]}
+              >
                 {soundEnabled ? "Sonido Activado" : "Sonido Desactivado"}
               </Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Volumen música de fondo */}
-          <View
-            style={[
-              styles.volumeSection,
-              !soundEnabled && styles.volumeSectionDisabled,
-            ]}
-          >
-            <View style={styles.labelContainer}>
-              <Text style={styles.label}>🎵 Música de Fondo</Text>
-              <Text style={styles.volumeValue}>
-                {Math.round(backgroundVolume * 100)}%
+            {/* Volumen música de fondo */}
+            <View
+              style={[
+                styles.volumeSection,
+                !soundEnabled && styles.volumeSectionDisabled,
+              ]}
+            >
+              <View style={styles.labelContainer}>
+                <Text style={styles.label}>🎵 Música de Fondo</Text>
+                <Text style={[styles.volumeValue, styles.volumeValueOrange]}>
+                  {Math.round(backgroundVolume * 100)}%
+                </Text>
+              </View>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={1}
+                value={backgroundVolume}
+                onValueChange={handleBackgroundVolumeChange}
+                minimumTrackTintColor="#FF6B35"
+                maximumTrackTintColor="#333"
+                thumbTintColor="#FF6B35"
+                disabled={!soundEnabled}
+              />
+            </View>
+
+            {/* Volumen efectos */}
+            <View
+              style={[
+                styles.volumeSection,
+                !soundEnabled && styles.volumeSectionDisabled,
+              ]}
+            >
+              <View style={styles.labelContainer}>
+                <Text style={styles.label}>🔔 Efectos de Sonido</Text>
+                <Text style={[styles.volumeValue, styles.volumeValueRed]}>
+                  {Math.round(sfxVolume * 100)}%
+                </Text>
+              </View>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={1}
+                value={sfxVolume}
+                onValueChange={updateSfxVolume}
+                minimumTrackTintColor="#c0392b"
+                maximumTrackTintColor="#333"
+                thumbTintColor="#c0392b"
+                disabled={!soundEnabled}
+              />
+              <Text style={styles.description}>
+                Sonidos de cartas, toasts y dados
               </Text>
             </View>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
-              value={backgroundVolume}
-              onValueChange={handleBackgroundVolumeChange}
-              minimumTrackTintColor="#FF6B6B"
-              maximumTrackTintColor="#333"
-              thumbTintColor="#FF6B6B"
-              disabled={!soundEnabled}
-            />
-          </View>
-
-          {/* Volumen efectos */}
-          <View
-            style={[
-              styles.volumeSection,
-              !soundEnabled && styles.volumeSectionDisabled,
-            ]}
-          >
-            <View style={styles.labelContainer}>
-              <Text style={styles.label}>🔔 Efectos de Sonido</Text>
-              <Text style={styles.volumeValue}>
-                {Math.round(sfxVolume * 100)}%
-              </Text>
-            </View>
-            <Slider
-              style={styles.slider}
-              minimumValue={0}
-              maximumValue={1}
-              value={sfxVolume}
-              onValueChange={updateSfxVolume}
-              minimumTrackTintColor="#4ECDC4"
-              maximumTrackTintColor="#333"
-              thumbTintColor="#4ECDC4"
-              disabled={!soundEnabled}
-            />
-            <Text style={styles.description}>
-              Sonidos de cartas, toasts y dados
-            </Text>
           </View>
         </ScrollView>
       </View>
@@ -183,7 +203,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "rgba(27, 27, 27, 0.92)",
-    paddingTop: 60,
+    paddingTop: 50,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 4,
   },
   scrollContainer: {
     flex: 1,
@@ -191,24 +215,23 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   backButton: {
-    position: "absolute",
-    top: 80,
-    left: 20,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#222",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#c0392b",
-    zIndex: 10,
-    shadowColor: "#c0392b",
+    borderColor: "#FF6B35",
+    shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.7,
-    shadowRadius: 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
   },
   backButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
     fontFamily: "monospace",
     letterSpacing: 1,
@@ -216,43 +239,83 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
+  titleBlock: {
+    alignItems: "center",
+    marginTop: 6,
+    marginBottom: 24,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: "900",
     color: "#FF6B35",
-    marginBottom: 32,
-    marginTop: 90,
     textAlign: "center",
-    letterSpacing: 1,
+    letterSpacing: 2,
+    fontFamily: "monospace",
+    textTransform: "uppercase",
     textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
-  sectionTitle: {
+  titleDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    width: 220,
+  },
+  titleDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255, 107, 53, 0.4)",
+  },
+  titleDividerIcon: {
     color: "#FF6B35",
-    fontSize: 16,
-    fontWeight: "900",
-    fontFamily: "monospace",
-    letterSpacing: 1,
-    marginBottom: 12,
-    marginLeft: 4,
-    textTransform: "uppercase",
+    fontSize: 14,
+    marginHorizontal: 10,
   },
 
-  // Baraja
+  // Paneles
+  panel: {
+    backgroundColor: "rgba(20, 20, 20, 0.75)",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255, 107, 53, 0.25)",
+    padding: 18,
+    marginBottom: 26,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  sectionTitle: {
+    color: "#FF6B35",
+    fontSize: 15,
+    fontWeight: "900",
+    fontFamily: "monospace",
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    textTransform: "uppercase",
+    borderLeftWidth: 3,
+    borderLeftColor: "#FF6B35",
+    paddingLeft: 10,
+  },
+
+  // Baraja: tarjetas con proporción de naipe
   barajaSection: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 36,
+    gap: 14,
   },
   barajaBtn: {
     flex: 1,
-    backgroundColor: "rgba(20,20,20,0.8)",
-    borderRadius: 12,
-    padding: 16,
+    minHeight: 120,
+    backgroundColor: "rgba(20, 20, 20, 0.8)",
+    borderRadius: 14,
+    paddingVertical: 22,
+    paddingHorizontal: 12,
     borderWidth: 2,
     borderColor: "#444",
     alignItems: "center",
+    justifyContent: "center",
     position: "relative",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -262,10 +325,11 @@ const styles = StyleSheet.create({
   },
   barajaBtnSelected: {
     borderColor: "#FF6B35",
-    backgroundColor: "rgba(255,107,53,0.12)",
+    backgroundColor: "rgba(255, 107, 53, 0.12)",
     shadowColor: "#FF6B35",
     shadowOpacity: 0.5,
     shadowRadius: 6,
+    elevation: 6,
   },
   barajaBtnLabel: {
     color: "#aaa",
@@ -289,12 +353,12 @@ const styles = StyleSheet.create({
   },
   barajaCheck: {
     position: "absolute",
-    top: -8,
-    right: -8,
+    top: -9,
+    right: -9,
     backgroundColor: "#FF6B35",
-    borderRadius: 10,
-    width: 22,
-    height: 22,
+    borderRadius: 11,
+    width: 24,
+    height: 24,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -302,16 +366,11 @@ const styles = StyleSheet.create({
   },
   barajaCheckText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "900",
   },
 
   // Sonido
-  soundToggleSection: {
-    width: "100%",
-    marginBottom: 20,
-    alignItems: "center",
-  },
   soundToggle: {
     width: "100%",
     paddingVertical: 22,
@@ -322,19 +381,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 14,
     borderWidth: 2,
-    shadowColor: "#000",
+    marginBottom: 20,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
   soundOn: {
-    backgroundColor: "rgba(78, 205, 196, 0.15)",
-    borderColor: "#4ECDC4",
+    backgroundColor: "rgba(255, 107, 53, 0.15)",
+    borderColor: "#FF6B35",
+    shadowColor: "#FF6B35",
   },
   soundOff: {
-    backgroundColor: "rgba(255, 107, 107, 0.15)",
-    borderColor: "#FF6B6B",
+    backgroundColor: "rgba(192, 57, 43, 0.15)",
+    borderColor: "#c0392b",
+    shadowColor: "#000",
   },
   soundIcon: {
     fontSize: 32,
@@ -343,14 +404,21 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+    fontFamily: "monospace",
     letterSpacing: 0.5,
+  },
+  soundToggleTextOn: {
+    color: "#fff",
+  },
+  soundToggleTextOff: {
+    color: "#ddd",
   },
   volumeSection: {
     width: "100%",
-    marginBottom: 20,
+    marginBottom: 18,
     paddingHorizontal: 10,
     paddingVertical: 16,
-    backgroundColor: "rgba(20, 20, 20, 0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255, 107, 53, 0.2)",
@@ -365,32 +433,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     color: "#fff",
     letterSpacing: 0.3,
   },
   volumeValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#4ECDC4",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "rgba(78, 205, 196, 0.15)",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#4ECDC4",
+  },
+  volumeValueOrange: {
+    color: "#FF6B35",
+    backgroundColor: "rgba(255, 107, 53, 0.14)",
+    borderColor: "#FF6B35",
+  },
+  volumeValueRed: {
+    color: "#e57368",
+    backgroundColor: "rgba(192, 57, 43, 0.14)",
+    borderColor: "#c0392b",
   },
   slider: {
     width: "100%",
     height: 44,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   description: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#999",
     fontStyle: "italic",
-    marginTop: 8,
+    marginTop: 6,
     letterSpacing: 0.2,
   },
 });

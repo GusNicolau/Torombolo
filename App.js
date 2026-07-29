@@ -3,7 +3,10 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { PlayersProvider } from "./src/context/PlayersContext";
-import { SoundSettingsProvider } from "./src/context/SoundSettingsContext";
+import {
+  SoundSettingsProvider,
+  useSoundSettings,
+} from "./src/context/SoundSettingsContext";
 import GameScreen from "./src/screens/GameScreen";
 import MenuScreen from "./src/screens/MenuScreen";
 import MoustacheScreen from "./src/screens/MoustacheScreen";
@@ -20,39 +23,55 @@ const Stack = createNativeStackNavigator();
 
 function AppContent() {
   const appState = useRef(AppState.currentState);
+  const { soundEnabled, isReady } = useSoundSettings();
 
   useEffect(() => {
-    const setupAudio = async () => {
-      await initSounds();
-      await playBackgroundMusic();
-    };
-    setupAudio();
+    initSounds();
     return () => {
       stopBackgroundMusic();
     };
   }, []);
 
+  // Arranca la música una única vez, en cuanto se sabe si el usuario la
+  // tenía desactivada (evita reproducirla siempre por defecto y luego
+  // tener que pararla, que era lo que hacía parecer roto el toggle al
+  // abrir la app). El encendido/apagado posterior ya lo gestiona
+  // toggleSound() en el contexto pausando/reanudando el mismo sonido; si
+  // este efecto reaccionara también a cada cambio de soundEnabled,
+  // ambos caminos crearían pistas de música por separado y sonarían
+  // superpuestas.
+  const hasStartedAudio = useRef(false);
   useEffect(() => {
+    if (!isReady || hasStartedAudio.current) return;
+    hasStartedAudio.current = true;
+    if (soundEnabled) {
+      playBackgroundMusic();
+    }
+  }, [isReady, soundEnabled]);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        // App has come to foreground
+        if (soundEnabled) {
+          await playBackgroundMusic();
+        }
+      } else if (nextAppState.match(/inactive|background/)) {
+        // App has gone to background
+        await stopBackgroundMusic();
+      }
+      appState.current = nextAppState;
+    };
+
     const subscription = AppState.addEventListener(
       "change",
       handleAppStateChange,
     );
     return () => subscription.remove();
-  }, []);
-
-  const handleAppStateChange = async (nextAppState) => {
-    if (
-      appState.current.match(/inactive|background/) &&
-      nextAppState === "active"
-    ) {
-      // App has come to foreground
-      await playBackgroundMusic();
-    } else if (nextAppState.match(/inactive|background/)) {
-      // App has gone to background
-      await stopBackgroundMusic();
-    }
-    appState.current = nextAppState;
-  };
+  }, [soundEnabled]);
 
   return (
     <NavigationContainer>

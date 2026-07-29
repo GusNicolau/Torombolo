@@ -110,6 +110,11 @@ export const playSound = async (soundName) => {
 };
 
 export const playBackgroundMusic = async () => {
+  // Ningún llamador (GameScreen al volver del menú, reanudar desde
+  // background, etc.) debe poder arrancar música si el sonido está
+  // desactivado; centralizarlo aquí evita tener que repetir el chequeo
+  // en cada sitio que llama a esta función.
+  if (!soundSettings.enabled) return;
   try {
     if (backgroundSound) {
       try {
