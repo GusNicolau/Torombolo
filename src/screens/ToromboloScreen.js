@@ -1,4 +1,5 @@
-import { useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
 import {
   Animated,
   Image,
@@ -163,7 +164,6 @@ export default function ToromboloScreen({ navigation, route }) {
   const [tDiscarded, setTDiscarded] = useState([]); // monton en tapete (visualmente acumulado)
   const [tStep, setTStep] = useState(1); // 1..4 pruebas
   const [tSuccesses, setTSuccesses] = useState([]);
-  const [tFailures, setTFailures] = useState(0);
   const [tDrinks, setTDrinks] = useState(0);
   const [tTotalPassed, setTTotalPassed] = useState(0);
   const [tFinished, setTFinished] = useState(false);
@@ -216,10 +216,23 @@ export default function ToromboloScreen({ navigation, route }) {
   const [bebidaImage, setBebidaImage] = useState(null);
   const bebidaFadeAnim = useState(new Animated.Value(0))[0];
   const playerChangeAnim = useState(new Animated.Value(0))[0];
+  const endFadeAnim = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    if (tFinished) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      endFadeAnim.setValue(0);
+      Animated.spring(endFadeAnim, {
+        toValue: 1,
+        friction: 7,
+        tension: 60,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [tFinished, endFadeAnim]);
 
   const fail = (card) => {
     playSound("toast");
-    setTFailures((f) => f + 1);
     setTDrinks((d) => d + 1);
     setTStep(1);
     setTCards([]);
@@ -381,26 +394,78 @@ export default function ToromboloScreen({ navigation, route }) {
   return (
     <ImageBackground source={TAPETE} style={styles.container}>
       {tFinished && (
-        <View style={styles.endOverlay}>
-          <Text style={styles.endTitle}>Torombolo finalizado</Text>
-          <Text style={styles.endText}>Cartas superadas: {tTotalPassed}</Text>
-          <Text style={styles.endText}>Fallos: {tFailures}</Text>
-          <Text style={styles.endText}>Traguitos: {tDrinks}</Text>
-          <TouchableOpacity
-            style={styles.endButton}
-            onPress={() => navigation.navigate("Menu")}
+        <Animated.View style={[styles.endOverlay, { opacity: endFadeAnim }]}>
+          <Animated.View
+            style={[
+              styles.endContainer,
+              {
+                transform: [
+                  {
+                    scale: endFadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.85, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
-            <Text style={styles.endButtonText}>Volver al menú</Text>
-          </TouchableOpacity>
-        </View>
+            {loser?.imagen && (
+              <Image source={loser.imagen} style={styles.endAvatar} />
+            )}
+            <Text style={styles.endTitle}>¡Torombolo superado!</Text>
+            <Text style={styles.endCaption}>
+              {loser?.nombre || `Jugador ${loserIndex + 1}`}
+            </Text>
+
+            <View style={styles.endStatsPanel}>
+              <View style={[styles.endStatRow, styles.endStatRowMid]}>
+                <Text style={styles.endStatLabel}>🃏 Cartas superadas</Text>
+                <Text style={styles.endStatValue}>{tTotalPassed}</Text>
+              </View>
+              <View style={styles.endStatRow}>
+                <Text style={styles.endStatLabel}>🍺 Traguitos</Text>
+                <Text style={styles.endStatValue}>{tDrinks}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.endButton}
+              onPress={() => navigation.navigate("Menu")}
+            >
+              <Text style={styles.endButtonText}>Volver al menú</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
       )}
+      <TouchableOpacity
+        style={styles.finalizarBtn}
+        onPress={() => setTFinished(true)}
+      >
+        <Text style={styles.finalizarBtnText}>Finalizar</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.tutorialBtn}
+        onPress={() => {
+          setShowTutorial(true);
+          tutorialFadeAnim.setValue(0);
+          Animated.timing(tutorialFadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+        }}
+      >
+        <Text style={styles.tutorialBtnText}>?</Text>
+      </TouchableOpacity>
+
       <View style={styles.topRow}>
         <View style={styles.playerHeader}>
           {loser?.imagen && (
             <Image source={loser.imagen} style={styles.playerIcon} />
           )}
-          <View>
-            <Image source={TITULO} style={styles.titleImage} />
+          <View style={styles.playerHeaderInfo}>
             <Text style={styles.subtitle}>
               {loser?.nombre || `Jugador ${loserIndex + 1}`}
             </Text>
@@ -409,33 +474,11 @@ export default function ToromboloScreen({ navigation, route }) {
             </Text>
           </View>
         </View>
-      </View>
-      <View
-        style={[
-          styles.actionButtonsRow,
-          {
-            marginTop: 0,
-            marginBottom: 0,
-            paddingTop: 0,
-            justifyContent: "center",
-            alignItems: "center",
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.tutorialSmallBtn}
-          onPress={() => {
-            setShowTutorial(true);
-            tutorialFadeAnim.setValue(0);
-            Animated.timing(tutorialFadeAnim, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: true,
-            }).start();
-          }}
-        >
-          <Text style={styles.tutorialSmallBtnText}>?</Text>
-        </TouchableOpacity>
+        <Image
+          source={TITULO}
+          style={styles.titleImage}
+          resizeMode="contain"
+        />
       </View>
 
       <View style={styles.tTopSequence} pointerEvents="none">
@@ -563,13 +606,6 @@ export default function ToromboloScreen({ navigation, route }) {
             ))}
           </View>
         )}
-
-        <TouchableOpacity
-          style={styles.finishBtn}
-          onPress={() => setTFinished(true)}
-        >
-          <Text style={styles.finishBtnText}>Finalizar partida</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Popups */}
@@ -658,40 +694,37 @@ Adivina el palo (Bastos, Copas, Espadas, Oros).
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topRow: {
-    paddingTop: -10,
+    paddingTop: 110,
     paddingBottom: 12,
     alignItems: "center",
-  },
-  actionButtonsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 10,
   },
   playerHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginTop: 8,
+    gap: 14,
   },
   playerIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 15,
+    width: 112,
+    height: 112,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: "#fff",
-    marginTop: 8, // Lower the avatar slightly
+    borderColor: "#c0392b",
   },
   title: { color: "#fff", fontSize: 38, fontWeight: "700" },
-  titleImage: {
-    top: 20,
-    width: 245,
-    height: 150,
-    resizeMode: "absolute",
+  playerHeaderInfo: {
+    justifyContent: "center",
   },
-  subtitle: { color: "#ddd", fontSize: 16, marginTop: -8, fontWeight: "600" },
-  counterText: { color: "#fff", fontSize: 12, marginTop: 2 },
+  titleImage: {
+    width: 340,
+    height: 94,
+    marginTop: 16,
+  },
+  subtitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  counterText: { color: "#ccc", fontSize: 12, marginTop: 4 },
   tTopSequence: {
     height: 100,
     marginTop: 10,
@@ -759,20 +792,20 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   btn: {
-    backgroundColor: "#222",
-    borderRadius: 12,
-    paddingHorizontal: 22,
-    paddingVertical: 15,
+    backgroundColor: "#FF6B35",
+    borderRadius: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    borderColor: "rgba(255,255,255,0.35)",
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
     margin: 6,
-    minWidth: 100,
+    minWidth: 110,
   },
   btnText: {
     color: "#fff",
@@ -780,33 +813,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 1,
     fontFamily: "monospace",
-    textShadowColor: "#000",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    textTransform: "uppercase",
-  },
-  finishBtn: {
-    backgroundColor: "#222",
-    borderRadius: 12,
-    paddingHorizontal: 22,
-    paddingVertical: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    marginTop: 16,
-  },
-  finishBtnText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "900",
-    letterSpacing: 1,
-    fontFamily: "monospace",
-    textShadowColor: "#000",
+    textShadowColor: "rgba(0,0,0,0.35)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
     textTransform: "uppercase",
@@ -861,32 +868,89 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: "rgba(0,0,0,0.92)",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 20,
     zIndex: 999,
   },
-  endTitle: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 20,
+  endContainer: {
+    alignItems: "center",
+    backgroundColor: "rgba(20,20,20,0.98)",
+    borderRadius: 20,
+    padding: 28,
+    borderWidth: 3,
+    borderColor: "#FF6B35",
+    width: "100%",
+    maxWidth: 380,
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
   },
-  endText: {
-    color: "#fff",
-    fontSize: 18,
+  endAvatar: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2,
+    borderColor: "#c0392b",
     marginBottom: 12,
   },
+  endTitle: {
+    color: "#FF6B35",
+    fontSize: 24,
+    fontWeight: "900",
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  endCaption: {
+    color: "#ccc",
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  endStatsPanel: {
+    width: "100%",
+    backgroundColor: "rgba(255,107,53,0.08)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.3)",
+    paddingVertical: 6,
+    marginBottom: 24,
+  },
+  endStatRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  endStatRowMid: {
+    borderBottomWidth: 1,
+    borderColor: "rgba(255,107,53,0.2)",
+  },
+  endStatLabel: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  endStatValue: {
+    color: "#FF6B35",
+    fontSize: 17,
+    fontWeight: "900",
+  },
   endButton: {
-    backgroundColor: "#2980b9",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginTop: 20,
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.35)",
   },
   endButtonText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 16,
   },
   bebidaOverlay: {
@@ -917,35 +981,51 @@ const styles = StyleSheet.create({
   },
   tutorialBtn: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    top: 56,
+    right: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#222",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
   },
   finalizarBtn: {
     position: "absolute",
-    top: 16,
-    left: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    top: 56,
+    left: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    backgroundColor: "#222",
     borderRadius: 8,
     zIndex: 100,
+    borderWidth: 2,
+    borderColor: "#c0392b",
+    shadowColor: "#c0392b",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
   },
   finalizarBtnText: {
     color: "#fff",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontFamily: "monospace",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   tutorialBtnText: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "bold",
+    fontFamily: "monospace",
   },
   tutorialOverlay: {
     position: "absolute",
@@ -987,26 +1067,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
-  },
-  tutorialSmallBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#222",
-    borderWidth: 2,
-    borderColor: "#c0392b",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#c0392b",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-  },
-  tutorialSmallBtnText: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "bold",
-    fontFamily: "monospace",
   },
   tutorialScroll: {
     maxHeight: 400,

@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
 import {
   Animated,
@@ -195,17 +196,29 @@ export default function GameScreen({ navigation, route }) {
   const [gameOver, setGameOver] = useState(false);
   const [finalCounts, setFinalCounts] = useState(null);
   const [loserIndex, setLoserIndex] = useState(null);
+  // Revelado en cadena del fin de partida: cartas boca abajo → se giran una
+  // a una → se señala al perdedor
+  const [revealStep, setRevealStep] = useState(0);
+  const [showLoserReveal, setShowLoserReveal] = useState(false);
+  const cardRevealAnims = useState(() =>
+    players.map(() => new Animated.Value(0)),
+  )[0];
+  const loserBadgeAnim = useState(new Animated.Value(0))[0];
+  const ctaAnim = useState(new Animated.Value(0))[0];
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialFadeAnim = useState(new Animated.Value(0))[0];
   // Confirm finish popup
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
-  // Coin flip state para el 1
+  // Coin flip state: sirve tanto para el 1 ("card") como para el empate de
+  // perdedores al terminar la partida ("loser")
   const [showCoinFlipper, setShowCoinFlipper] = useState(false);
+  const [coinFlipMode, setCoinFlipMode] = useState("card");
   const [coinCandidates, setCoinCandidates] = useState([]); // indices
   const [coinChooserIdx, setCoinChooserIdx] = useState(0);
   const [coinChoices, setCoinChoices] = useState({}); // {playerIdx: 'cara'|'cruz'}
   const [coinFlipping, setCoinFlipping] = useState(false);
   const [pendingCard, setPendingCard] = useState(null);
+  const [pendingFinalCounts, setPendingFinalCounts] = useState(null);
   const [revealedCardTarget, setRevealedCardTarget] = useState(null); // { player, index }
 
   // Stop background music when game starts, resume when game ends
@@ -220,6 +233,66 @@ export default function GameScreen({ navigation, route }) {
   }, []);
 
   // (Torombolo moved to its own screen)
+
+  // Secuencia de revelado del fin de partida: las cartas empiezan boca
+  // abajo, se giran una a una, y tras una pequeña pausa se señala a quien
+  // pierde con el sello y aparece el botón de Torombolo.
+  useEffect(() => {
+    if (!gameOver) return;
+    let cancelled = false;
+    const timers = [];
+
+    setRevealStep(0);
+    setShowLoserReveal(false);
+    cardRevealAnims.forEach((anim) => anim.setValue(0));
+    loserBadgeAnim.setValue(0);
+    ctaAnim.setValue(0);
+
+    const revealNext = (i) => {
+      if (cancelled) return;
+      if (i >= players.length) {
+        timers.push(
+          setTimeout(() => {
+            if (cancelled) return;
+            setShowLoserReveal(true);
+            playSound("toast").catch(() => {});
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Warning,
+            ).catch(() => {});
+            Animated.spring(loserBadgeAnim, {
+              toValue: 1,
+              friction: 5,
+              tension: 80,
+              useNativeDriver: true,
+            }).start();
+            Animated.timing(ctaAnim, {
+              toValue: 1,
+              duration: 350,
+              delay: 200,
+              useNativeDriver: true,
+            }).start();
+          }, 500),
+        );
+        return;
+      }
+      setRevealStep(i + 1);
+      playSound("carta").catch(() => {});
+      Animated.spring(cardRevealAnims[i], {
+        toValue: 1,
+        friction: 6,
+        tension: 70,
+        useNativeDriver: true,
+      }).start();
+      timers.push(setTimeout(() => revealNext(i + 1), 380));
+    };
+
+    timers.push(setTimeout(() => revealNext(0), 300));
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [gameOver]);
 
   const drawCard = () => {
     if (gameOver) return;
@@ -369,6 +442,21 @@ export default function GameScreen({ navigation, route }) {
     setRevealedCardTarget(null);
   };
 
+  // Lanza el duelo de moneda para decidir quién pierde entre varios
+  // jugadores empatados a menos cartas. Reutiliza el mismo mecanismo del 1:
+  // quien acierta cara/cruz "gana" el duelo, pero aquí ganar el duelo
+  // significa ser el perdedor de la partida.
+  const startLoserCoinFlip = (candidateIdxs, counts) => {
+    setPendingFinalCounts(counts);
+    setCoinFlipMode("loser");
+    setPendingCard(null);
+    setCoinCandidates(candidateIdxs);
+    setCoinChooserIdx(0);
+    setCoinChoices({});
+    setCoinFlipping(false);
+    setShowCoinFlipper(true);
+  };
+
   // Comprueba la fase final según el límite actual
   const checkFinalPhase = (countsArray) => {
     const counts = countsArray.map((c) => c.length);
@@ -382,9 +470,16 @@ export default function GameScreen({ navigation, route }) {
       const losers = counts
         .map((count, idx) => ({ count, idx }))
         .filter((obj) => obj.count === min);
-      setLoserIndex(losers[0].idx);
-      setGameOver(true);
-      setFinalCounts(counts);
+      if (losers.length === 1) {
+        setLoserIndex(losers[0].idx);
+        setGameOver(true);
+        setFinalCounts(counts);
+      } else {
+        startLoserCoinFlip(
+          losers.map((l) => l.idx),
+          counts,
+        );
+      }
       return;
     }
     if (alcanzaron.length === 0) return;
@@ -400,6 +495,28 @@ export default function GameScreen({ navigation, route }) {
     } else {
       setLimit((l) => l + 1);
       setFinalCounts(counts);
+    }
+  };
+
+  // TODO(debug): quitar junto con el botón "Forzar final" cuando terminemos
+  // de probar la pantalla de resultados
+  const debugForceGameOver = () => {
+    if (gameOver || revealedCard || showCoinFlipper || showFinishConfirm)
+      return;
+    const counts = playerCards.map((c) => c.length);
+    const min = Math.min(...counts);
+    const losers = counts
+      .map((count, idx) => ({ count, idx }))
+      .filter((obj) => obj.count === min);
+    if (losers.length === 1) {
+      setLoserIndex(losers[0].idx);
+      setFinalCounts(counts);
+      setGameOver(true);
+    } else {
+      startLoserCoinFlip(
+        losers.map((l) => l.idx),
+        counts,
+      );
     }
   };
 
@@ -422,11 +539,38 @@ export default function GameScreen({ navigation, route }) {
   };
 
   const handleCoinFlipComplete = (result) => {
-    if (!pendingCard) return;
-
     const winners = coinCandidates.filter(
       (pIdx) => coinChoices[pIdx] === result,
     );
+
+    if (coinFlipMode === "loser") {
+      if (winners.length === 1) {
+        // Ganador claro del duelo → es quien pierde la partida
+        setLoserIndex(winners[0]);
+        setFinalCounts(pendingFinalCounts);
+        setGameOver(true);
+        setShowCoinFlipper(false);
+        setCoinCandidates([]);
+        setCoinChoices({});
+        setCoinChooserIdx(0);
+        setCoinFlipping(false);
+        setCoinFlipMode("card");
+        setPendingFinalCounts(null);
+      } else if (winners.length === 0) {
+        setCoinCandidates(coinCandidates);
+        setCoinChooserIdx(0);
+        setCoinChoices({});
+        setCoinFlipping(false);
+      } else {
+        setCoinCandidates(winners);
+        setCoinChooserIdx(0);
+        setCoinChoices({});
+        setCoinFlipping(false);
+      }
+      return;
+    }
+
+    if (!pendingCard) return;
 
     if (winners.length === 1) {
       // Ganador claro → asignar carta
@@ -580,6 +724,13 @@ export default function GameScreen({ navigation, route }) {
             onPress={showTutorialPopup}
           >
             <Text style={styles.tutorialBtnText}>?</Text>
+          </TouchableOpacity>
+          {/* TODO(debug): quitar cuando terminemos de probar resultados */}
+          <TouchableOpacity
+            style={styles.debugEndBtn}
+            onPress={debugForceGameOver}
+          >
+            <Text style={styles.debugEndBtnText}>🏁 Forzar final</Text>
           </TouchableOpacity>
         </>
       )}
@@ -743,6 +894,11 @@ export default function GameScreen({ navigation, route }) {
       {/* Componente de la moneda */}
       {showCoinFlipper && (
         <View style={styles.coinFlipperOverlay}>
+          {coinFlipMode === "loser" && (
+            <Text style={styles.coinModeCaption}>
+              🍺 Duelo por quién pierde
+            </Text>
+          )}
           <View style={styles.coinContent}>
             <View style={styles.coinAvatarRow} pointerEvents="box-none">
               {coinCandidates.map((pIdx, i) => {
@@ -795,16 +951,34 @@ export default function GameScreen({ navigation, route }) {
                   </Text>
                   <View style={styles.coinChoiceButtons}>
                     <TouchableOpacity
-                      style={[styles.btn, { marginRight: 12 }]}
+                      style={[styles.coinChoiceBtn, styles.coinChoiceBtnCara]}
                       onPress={() => handleChoice("cara")}
+                      activeOpacity={0.85}
                     >
-                      <Text style={styles.btnText}>Cara</Text>
+                      <Text style={styles.coinChoiceBtnIcon}>👑</Text>
+                      <Text
+                        style={[
+                          styles.coinChoiceBtnText,
+                          styles.coinChoiceBtnTextCara,
+                        ]}
+                      >
+                        Cara
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.btn, { backgroundColor: "#4169E1" }]}
+                      style={[styles.coinChoiceBtn, styles.coinChoiceBtnCruz]}
                       onPress={() => handleChoice("cruz")}
+                      activeOpacity={0.85}
                     >
-                      <Text style={styles.btnText}>Cruz</Text>
+                      <Text style={styles.coinChoiceBtnIcon}>✦</Text>
+                      <Text
+                        style={[
+                          styles.coinChoiceBtnText,
+                          styles.coinChoiceBtnTextCruz,
+                        ]}
+                      >
+                        Cruz
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -820,7 +994,7 @@ export default function GameScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Overlay de fin de partida */}
+      {/* Overlay de fin de partida: revelado en cadena */}
       {gameOver && finalCounts && (
         <View style={styles.endOverlay}>
           <View
@@ -830,79 +1004,142 @@ export default function GameScreen({ navigation, route }) {
             ]}
           >
             <Text style={styles.endTitle}>Fin de la partida</Text>
+            <Text style={styles.endCaption}>
+              {showLoserReveal
+                ? "A por el Torombolo"
+                : revealStep === 0
+                  ? "Girando las cartas…"
+                  : "Contando cartas…"}
+            </Text>
+            {!showLoserReveal && (
+              <View style={styles.endTensionTrack}>
+                <View
+                  style={[
+                    styles.endTensionFill,
+                    { width: `${(revealStep / players.length) * 100}%` },
+                  ]}
+                />
+              </View>
+            )}
             <View
               style={[styles.endPlayersList, { padding: 8, marginBottom: 16 }]}
             >
-              {players.map((p, i) => (
-                <View key={i} style={[styles.endPlayerRow]}>
+              {players.map((p, i) => {
+                const anim = cardRevealAnims[i];
+                const isLoser = i === loserIndex;
+                const isLast = i === players.length - 1;
+                return (
                   <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      flex: 1,
-                    }}
+                    key={i}
+                    style={[styles.endPlayerRow, isLast && styles.endPlayerRowLast]}
                   >
-                    <Image
-                      source={
-                        p?.imagen || require("../../assets/moustache/ale.png")
-                      }
-                      style={[
-                        styles.endPlayerAvatar,
-                        {
-                          width: 40,
-                          height: 40,
-                          borderRadius: 20,
-                          marginRight: 10,
-                        },
-                      ]}
-                    />
-                    <View style={styles.endPlayerInfo}>
-                      <Text style={[styles.endPlayerName, { fontSize: 14 }]}>
-                        {p ? p.nombre : `Jugador ${i + 1}`}
-                      </Text>
-                      <Text style={[styles.endPlayerCards, { fontSize: 12 }]}>
-                        {finalCounts[i]} cartas
-                      </Text>
+                    <View style={styles.endPlayerRowInner}>
+                      {/* Boca abajo */}
+                      <Animated.View
+                        pointerEvents="none"
+                        style={[
+                          styles.endCardBack,
+                          {
+                            opacity: anim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 0],
+                            }),
+                          },
+                        ]}
+                      >
+                        <Text style={styles.endCardBackText}>?</Text>
+                      </Animated.View>
+                      {/* Revelada */}
+                      <Animated.View
+                        style={[
+                          styles.endPlayerRowContent,
+                          showLoserReveal &&
+                            isLoser &&
+                            styles.endPlayerRowLoser,
+                          {
+                            opacity: anim,
+                            transform: [
+                              {
+                                rotateY: anim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ["-90deg", "0deg"],
+                                }),
+                              },
+                              {
+                                scale: anim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [0.8, 1],
+                                }),
+                              },
+                            ],
+                          },
+                        ]}
+                      >
+                        <Image
+                          source={
+                            p?.imagen ||
+                            require("../../assets/moustache/ale.png")
+                          }
+                          style={styles.endPlayerAvatar}
+                        />
+                        <View style={styles.endPlayerInfo}>
+                          <Text style={styles.endPlayerName}>
+                            {p ? p.nombre : `Jugador ${i + 1}`}
+                          </Text>
+                          <Text style={styles.endPlayerCards}>
+                            {finalCounts[i]} cartas
+                          </Text>
+                        </View>
+                        {showLoserReveal && isLoser && (
+                          <Animated.View
+                            style={[
+                              styles.endLoserStamp,
+                              {
+                                opacity: loserBadgeAnim,
+                                transform: [
+                                  {
+                                    scale: loserBadgeAnim.interpolate({
+                                      inputRange: [0, 1],
+                                      outputRange: [0.4, 1],
+                                    }),
+                                  },
+                                  { rotate: "-8deg" },
+                                ],
+                              },
+                            ]}
+                          >
+                            <Text style={styles.endLoserStampText}>🍺</Text>
+                          </Animated.View>
+                        )}
+                      </Animated.View>
                     </View>
                   </View>
-                  {i === loserIndex && (
-                    <View
-                      style={{
-                        marginLeft: 10,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#FF6B35",
-                          fontWeight: "bold",
-                          fontSize: 20,
-                        }}
-                      >
-                        👎
-                      </Text>
-                      <Text
-                        style={{
-                          color: "#FF6B35",
-                          fontWeight: "bold",
-                          fontSize: 11,
-                          marginTop: 2,
-                        }}
-                      >
-                        Perdedor
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              ))}
+                );
+              })}
             </View>
-            <TouchableOpacity
-              style={[styles.btn, { marginTop: 8, alignSelf: "center" }]}
-              onPress={() => navigation.navigate("Torombolo", { loserIndex })}
+            <Animated.View
+              style={{
+                opacity: ctaAnim,
+                transform: [
+                  {
+                    translateY: ctaAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [12, 0],
+                    }),
+                  },
+                ],
+              }}
+              pointerEvents={showLoserReveal ? "auto" : "none"}
             >
-              <Text style={styles.btnText}>Torombolo</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, { marginTop: 8, alignSelf: "center" }]}
+                onPress={() =>
+                  navigation.navigate("Torombolo", { loserIndex })
+                }
+              >
+                <Text style={styles.btnText}>Torombolo</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </View>
       )}
@@ -944,6 +1181,24 @@ export default function GameScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // TODO(debug): quitar junto con debugForceGameOver
+  debugEndBtn: {
+    position: "absolute",
+    top: 56,
+    alignSelf: "center",
+    backgroundColor: "#e91e63",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    zIndex: 100,
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  debugEndBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
   tutorialBtn: {
     position: "absolute",
     top: 56,
@@ -1084,9 +1339,29 @@ const styles = StyleSheet.create({
     color: "#FF6B35",
     fontSize: 28,
     fontWeight: "900",
-    marginBottom: 28,
+    marginBottom: 4,
     textAlign: "center",
     letterSpacing: 1,
+  },
+  endCaption: {
+    color: "#ccc",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  endTensionTrack: {
+    width: "100%",
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
+    marginBottom: 18,
+  },
+  endTensionFill: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: "#FFD700",
   },
   endPlayersList: {
     width: "100%",
@@ -1098,13 +1373,40 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,107,53,0.3)",
   },
   endPlayerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,107,53,0.2)",
+  },
+  endPlayerRowLast: {
+    borderBottomWidth: 0,
+  },
+  endPlayerRowInner: {
+    position: "relative",
+  },
+  endCardBack: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 8,
+  },
+  endCardBackText: {
+    color: "rgba(255,255,255,0.3)",
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  endPlayerRowContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  endPlayerRowLoser: {
+    backgroundColor: "rgba(224,87,74,0.14)",
+    borderRadius: 10,
   },
   endPlayerAvatar: {
     width: 50,
@@ -1127,6 +1429,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginTop: 4,
+  },
+  endLoserStamp: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  endLoserStampText: {
+    fontSize: 40,
   },
   // ...estilos de endButton eliminados, se usa styles.btn y styles.btnText
   tOverlay: {
@@ -1304,6 +1613,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 220,
   },
+  coinModeCaption: {
+    position: "absolute",
+    top: 130,
+    alignSelf: "center",
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    backgroundColor: "rgba(192,57,43,0.25)",
+    borderWidth: 1,
+    borderColor: "#c0392b",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
   coinAvatarRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -1384,7 +1707,43 @@ const styles = StyleSheet.create({
   coinChoiceButtons: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 12,
+    gap: 14,
+  },
+  coinChoiceBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+  },
+  coinChoiceBtnCara: {
+    backgroundColor: "rgba(255,215,0,0.16)",
+    borderColor: "#FFD700",
+    shadowColor: "#FFD700",
+  },
+  coinChoiceBtnCruz: {
+    backgroundColor: "rgba(192,192,192,0.16)",
+    borderColor: "#C0C0C0",
+    shadowColor: "#C0C0C0",
+  },
+  coinChoiceBtnIcon: {
+    fontSize: 18,
+  },
+  coinChoiceBtnText: {
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  coinChoiceBtnTextCara: {
+    color: "#FFD700",
+  },
+  coinChoiceBtnTextCruz: {
+    color: "#e6e6e6",
   },
   revealedTarget: {
     alignItems: "center",
