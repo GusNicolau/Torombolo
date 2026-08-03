@@ -292,7 +292,7 @@ export default function GameScreen({ navigation, route }) {
       cancelled = true;
       timers.forEach(clearTimeout);
     };
-  }, [gameOver]);
+  }, [gameOver, cardRevealAnims, ctaAnim, loserBadgeAnim, players.length]);
 
   const drawCard = () => {
     if (gameOver) return;
@@ -380,16 +380,6 @@ export default function GameScreen({ navigation, route }) {
       // 4 jugadores: por palo
       return ["Oros", "Copas", "Espadas", "Bastos"].indexOf(card.palo);
     }
-  }
-
-  // Función para determinar ganador del 1: el jugador con menos cartas
-  function getWinnerOf1() {
-    const cardCounts = playerCards.map((c) => c.length);
-    const minCount = Math.min(...cardCounts);
-    const candidates = cardCounts
-      .map((count, i) => (count === minCount ? i : null))
-      .filter((i) => i !== null);
-    return candidates[0];
   }
 
   const placeRevealedCard = () => {
@@ -1323,20 +1313,20 @@ const styles = StyleSheet.create({
   },
   endContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(20,20,20,0.98)",
+    backgroundColor: "rgba(30,20,14,0.98)",
     borderRadius: 20,
     padding: 32,
     borderWidth: 3,
-    borderColor: "#FF6B35",
+    borderColor: "#d4a04c",
     maxWidth: 420,
-    shadowColor: "#FF6B35",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 15,
   },
   endTitle: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 28,
     fontWeight: "900",
     marginBottom: 4,
@@ -1366,16 +1356,16 @@ const styles = StyleSheet.create({
   endPlayersList: {
     width: "100%",
     marginBottom: 28,
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(212,160,76,0.08)",
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,107,53,0.3)",
+    borderColor: "rgba(212,160,76,0.3)",
   },
   endPlayerRow: {
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,107,53,0.2)",
+    borderBottomColor: "rgba(212,160,76,0.2)",
   },
   endPlayerRowLast: {
     borderBottomWidth: 0,
@@ -1413,7 +1403,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: "#FF6B35",
+    borderColor: "#d4a04c",
     marginRight: 14,
   },
   endPlayerInfo: {
@@ -1425,7 +1415,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   endPlayerCards: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 14,
     fontWeight: "600",
     marginTop: 4,
@@ -1498,15 +1488,15 @@ const styles = StyleSheet.create({
     zIndex: 500,
   },
   tutorialPopup: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#2a1c14",
     borderRadius: 16,
     padding: 20,
     paddingTop: 24,
     maxHeight: "80%",
     width: "88%",
     borderWidth: 2,
-    borderColor: "#FF6B35",
-    shadowColor: "#FF6B35",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -1530,7 +1520,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   tutorialTitle: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 22,
     fontWeight: "900",
     marginBottom: 16,
@@ -1543,18 +1533,18 @@ const styles = StyleSheet.create({
   tutorialRuleCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "rgba(255, 107, 53, 0.08)",
+    backgroundColor: "rgba(212, 160, 76, 0.08)",
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 53, 0.25)",
+    borderColor: "rgba(212, 160, 76, 0.25)",
   },
   tutorialRuleIconBox: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 107, 53, 0.15)",
+    backgroundColor: "rgba(212, 160, 76, 0.15)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -1577,13 +1567,13 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   btn: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#d4a04c",
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.4)",
-    shadowColor: "#FF6B35",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1620,9 +1610,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
-    backgroundColor: "rgba(192,57,43,0.25)",
+    backgroundColor: "rgba(212,160,76,0.25)",
     borderWidth: 1,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1646,7 +1636,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: "#FF6B35",
+    borderColor: "#d4a04c",
     pointerEvents: "none",
   },
   coinAvatarActive: {
@@ -1675,7 +1665,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#1a1a1a",
+    borderColor: "#2a1c14",
   },
   coinChoiceBadgeCara: {
     backgroundColor: "#FFD700",
@@ -1748,20 +1738,20 @@ const styles = StyleSheet.create({
   revealedTarget: {
     alignItems: "center",
     marginBottom: 20,
-    backgroundColor: "rgba(20,20,20,0.85)",
+    backgroundColor: "rgba(30,20,14,0.85)",
     borderRadius: 16,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderWidth: 2,
-    borderColor: "#FF6B35",
-    shadowColor: "#FF6B35",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 8,
   },
   revealedTargetLabel: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1.5,
@@ -1773,7 +1763,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     borderWidth: 3,
-    borderColor: "#FF6B35",
+    borderColor: "#d4a04c",
     marginBottom: 8,
   },
   revealedTargetName: {

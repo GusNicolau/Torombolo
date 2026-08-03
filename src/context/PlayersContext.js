@@ -81,6 +81,32 @@ export const PlayersProvider = ({ children }) => {
     });
   };
 
+  // Reordenar jugador arrastrando de una posición del array a otra
+  // (a diferencia de moveJugador, que solo intercambia dos posiciones)
+  const reorderJugadores = (fromIndex, toIndex) => {
+    setJugadores((prev) => {
+      if (
+        fromIndex < 0 ||
+        fromIndex >= prev.length ||
+        toIndex < 0 ||
+        toIndex >= prev.length ||
+        fromIndex === toIndex
+      )
+        return prev;
+
+      const newArray = [...prev];
+      const [moved] = newArray.splice(fromIndex, 1);
+      newArray.splice(toIndex, 0, moved);
+
+      const posiciones = ["top", "middle", "bottom", "left"];
+      return newArray.map((j, idx) => ({
+        ...j,
+        posicion: posiciones[idx],
+        rol: getDefaultRole(posiciones[idx]),
+      }));
+    });
+  };
+
   const getAllPlayers = () => jugadores;
 
   return (
@@ -90,6 +116,7 @@ export const PlayersProvider = ({ children }) => {
         addJugador,
         removeJugador,
         moveJugador,
+        reorderJugadores,
         getAllPlayers,
         ROLES,
       }}

@@ -152,9 +152,9 @@ export default function SettingsScreen({ navigation }) {
                 maximumValue={1}
                 value={backgroundVolume}
                 onValueChange={handleBackgroundVolumeChange}
-                minimumTrackTintColor="#FF6B35"
+                minimumTrackTintColor="#d4a04c"
                 maximumTrackTintColor="#333"
-                thumbTintColor="#FF6B35"
+                thumbTintColor="#d4a04c"
                 disabled={!soundEnabled}
               />
             </View>
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "rgba(27, 27, 27, 0.92)",
+    backgroundColor: "rgba(20, 14, 10, 0.86)",
     paddingTop: 50,
   },
   header: {
@@ -218,13 +218,13 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: "#FF6B35",
-    shadowColor: "#FF6B35",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 3,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: "900",
-    color: "#FF6B35",
+    color: "#d4a04c",
     textAlign: "center",
     letterSpacing: 2,
     fontFamily: "monospace",
@@ -265,20 +265,20 @@ const styles = StyleSheet.create({
   titleDividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "rgba(255, 107, 53, 0.4)",
+    backgroundColor: "rgba(212, 160, 76, 0.4)",
   },
   titleDividerIcon: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 14,
     marginHorizontal: 10,
   },
 
   // Paneles
   panel: {
-    backgroundColor: "rgba(20, 20, 20, 0.75)",
+    backgroundColor: "rgba(30, 20, 14, 0.75)",
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 53, 0.25)",
+    borderColor: "rgba(212, 160, 76, 0.25)",
     padding: 18,
     marginBottom: 26,
     shadowColor: "#000",
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   sectionTitle: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 15,
     fontWeight: "900",
     fontFamily: "monospace",
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textTransform: "uppercase",
     borderLeftWidth: 3,
-    borderLeftColor: "#FF6B35",
+    borderLeftColor: "#d4a04c",
     paddingLeft: 10,
   },
 
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   barajaBtn: {
     flex: 1,
     minHeight: 120,
-    backgroundColor: "rgba(20, 20, 20, 0.8)",
+    backgroundColor: "rgba(30, 20, 14, 0.8)",
     borderRadius: 14,
     paddingVertical: 22,
     paddingHorizontal: 12,
@@ -324,9 +324,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   barajaBtnSelected: {
-    borderColor: "#FF6B35",
-    backgroundColor: "rgba(255, 107, 53, 0.12)",
-    shadowColor: "#FF6B35",
+    borderColor: "#d4a04c",
+    backgroundColor: "rgba(212, 160, 76, 0.12)",
+    shadowColor: "#d4a04c",
     shadowOpacity: 0.5,
     shadowRadius: 6,
     elevation: 6,
@@ -349,20 +349,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   barajaBtnDescSelected: {
-    color: "#FF6B35",
+    color: "#d4a04c",
   },
   barajaCheck: {
     position: "absolute",
     top: -9,
     right: -9,
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#d4a04c",
     borderRadius: 11,
     width: 24,
     height: 24,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#1a1a1a",
+    borderColor: "#2a1c14",
   },
   barajaCheckText: {
     color: "#fff",
@@ -388,9 +388,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   soundOn: {
-    backgroundColor: "rgba(255, 107, 53, 0.15)",
-    borderColor: "#FF6B35",
-    shadowColor: "#FF6B35",
+    backgroundColor: "rgba(212, 160, 76, 0.15)",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
   },
   soundOff: {
     backgroundColor: "rgba(192, 57, 43, 0.15)",
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255, 107, 53, 0.2)",
+    borderColor: "rgba(212, 160, 76, 0.2)",
   },
   volumeSectionDisabled: {
     opacity: 0.4,
@@ -447,9 +447,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   volumeValueOrange: {
-    color: "#FF6B35",
-    backgroundColor: "rgba(255, 107, 53, 0.14)",
-    borderColor: "#FF6B35",
+    color: "#d4a04c",
+    backgroundColor: "rgba(212, 160, 76, 0.14)",
+    borderColor: "#d4a04c",
   },
   volumeValueRed: {
     color: "#e57368",

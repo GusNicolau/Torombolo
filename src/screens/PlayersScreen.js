@@ -1,9 +1,12 @@
-import { useState } from "react";
+import * as Haptics from "expo-haptics";
+import { useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   FlatList,
   Image,
   ImageBackground,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +16,9 @@ import {
 } from "react-native";
 
 import { usePlayers } from "../context/PlayersContext";
+
+const ROW_GAP = 12;
+const FALLBACK_ROW_HEIGHT = 94;
 const FONDO = require("../../assets/images/Inicio5.png");
 
 const AVATARES = [
@@ -35,7 +41,8 @@ const AVATARES = [
 
 export default function PlayersScreen({ navigation }) {
   const [playerName, setPlayerName] = useState("");
-  const { jugadores, addJugador, removeJugador, moveJugador } = usePlayers();
+  const { jugadores, addJugador, removeJugador, reorderJugadores } =
+    usePlayers();
 
   // Estado para edición de nombre
   const [editingName, setEditingName] = useState(null);
@@ -43,6 +50,88 @@ export default function PlayersScreen({ navigation }) {
 
   // Estado para edición de avatar
   const [editingAvatar, setEditingAvatar] = useState(null);
+
+  // Estado para arrastrar y reordenar jugadores
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const dragY = useRef(new Animated.Value(0)).current;
+  const dragStateRef = useRef({ fromIndex: null, targetIndex: null });
+  const shiftAnimsRef = useRef({});
+  const rowHeightRef = useRef(FALLBACK_ROW_HEIGHT);
+
+  const getShiftAnim = (index) => {
+    if (!shiftAnimsRef.current[index]) {
+      shiftAnimsRef.current[index] = new Animated.Value(0);
+    }
+    return shiftAnimsRef.current[index];
+  };
+
+  const resetShifts = () => {
+    Object.values(shiftAnimsRef.current).forEach((anim) => anim.setValue(0));
+  };
+
+  const finishDrag = () => {
+    const { fromIndex, targetIndex } = dragStateRef.current;
+    const rowHeight = rowHeightRef.current;
+    const snapOffset =
+      fromIndex !== null && targetIndex !== null
+        ? (targetIndex - fromIndex) * rowHeight
+        : 0;
+    Animated.timing(dragY, {
+      toValue: snapOffset,
+      duration: 140,
+      useNativeDriver: true,
+    }).start(() => {
+      setDraggingIndex(null);
+      dragY.setValue(0);
+      resetShifts();
+      if (
+        fromIndex !== null &&
+        targetIndex !== null &&
+        fromIndex !== targetIndex
+      ) {
+        reorderJugadores(fromIndex, targetIndex);
+      }
+      dragStateRef.current = { fromIndex: null, targetIndex: null };
+    });
+  };
+
+  const createRowPanResponder = (index) =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 2,
+      onPanResponderGrant: () => {
+        dragStateRef.current = { fromIndex: index, targetIndex: index };
+        dragY.setValue(0);
+        setDraggingIndex(index);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      },
+      onPanResponderMove: (_, gesture) => {
+        dragY.setValue(gesture.dy);
+        const rowHeight = rowHeightRef.current;
+        const newTarget = Math.min(
+          Math.max(index + Math.round(gesture.dy / rowHeight), 0),
+          jugadores.length - 1,
+        );
+        if (newTarget !== dragStateRef.current.targetIndex) {
+          dragStateRef.current.targetIndex = newTarget;
+          for (let i = 0; i < jugadores.length; i++) {
+            if (i === index) continue;
+            let shift = 0;
+            if (index < newTarget && i > index && i <= newTarget) shift = -1;
+            else if (index > newTarget && i < index && i >= newTarget)
+              shift = 1;
+            Animated.spring(getShiftAnim(i), {
+              toValue: shift * rowHeight,
+              useNativeDriver: true,
+              friction: 8,
+              tension: 60,
+            }).start();
+          }
+        }
+      },
+      onPanResponderRelease: finishDrag,
+      onPanResponderTerminate: finishDrag,
+    });
 
   let maxAlertShown = false;
 
@@ -98,29 +187,6 @@ export default function PlayersScreen({ navigation }) {
     setEditingAvatar(null);
   };
 
-  const movePlayerUp = (nombre) => {
-    const posiciones =
-      jugadores.length === 4
-        ? ["top", "middle", "bottom", "left"]
-        : ["top", "middle", "bottom"];
-    const jugador = jugadores.find((j) => j.nombre === nombre);
-    if (!jugador) return;
-    const currentIdx = posiciones.indexOf(jugador.posicion);
-    if (currentIdx > 0) moveJugador(nombre, posiciones[currentIdx - 1]);
-  };
-
-  const movePlayerDown = (nombre) => {
-    const posiciones =
-      jugadores.length === 4
-        ? ["top", "middle", "bottom", "left"]
-        : ["top", "middle", "bottom"];
-    const jugador = jugadores.find((j) => j.nombre === nombre);
-    if (!jugador) return;
-    const currentIdx = posiciones.indexOf(jugador.posicion);
-    if (currentIdx < posiciones.length - 1)
-      moveJugador(nombre, posiciones[currentIdx + 1]);
-  };
-
   const getRoleColor = (index) => {
     if (jugadores.length === 4) {
       return ["#fcb33f", "#40b1b9", "#9b59b6", "#b6ec23"][index] || "#95a5a6";
@@ -144,15 +210,27 @@ export default function PlayersScreen({ navigation }) {
   const renderPlayer = (item, index) => {
     const avatarSource = item.imagen || AVATARES[0];
     const isEditingThisName = editingName === item.nombre;
-    const posiciones =
-      jugadores.length === 4
-        ? ["top", "middle", "bottom", "left"]
-        : ["top", "middle", "bottom"];
-    const currentPosIdx = posiciones.indexOf(item.posicion);
+    const isDragging = draggingIndex === index;
+    const panResponder = createRowPanResponder(index);
+    const translateY = isDragging ? dragY : getShiftAnim(index);
 
     return (
-      <View style={styles.playerCard}>
-        <View style={styles.playerContent}>
+      <Animated.View
+        onLayout={(e) => {
+          rowHeightRef.current = e.nativeEvent.layout.height + ROW_GAP;
+        }}
+        style={[
+          { transform: [{ translateY }] },
+          isDragging && styles.playerCardWrapperDragging,
+        ]}
+      >
+        <View
+          style={[styles.playerCard, isDragging && styles.playerCardDragging]}
+        >
+          <View
+            style={[styles.roleAccent, { backgroundColor: getRoleColor(index) }]}
+          />
+          <View style={styles.playerContent}>
           <View style={styles.playerInfo}>
             {/* Avatar editable */}
             <TouchableOpacity
@@ -189,34 +267,22 @@ export default function PlayersScreen({ navigation }) {
                 </TouchableOpacity>
               )}
 
-              <View
-                style={[
-                  styles.roleBadge,
-                  { backgroundColor: getRoleColor(index) },
-                ]}
-              >
+              <View style={styles.roleBadge}>
+                <View
+                  style={[
+                    styles.roleDot,
+                    { backgroundColor: getRoleColor(index) },
+                  ]}
+                />
                 <Text style={styles.roleText}>{getRoleLabel(index)}</Text>
               </View>
             </View>
           </View>
 
           <View style={styles.playerActions}>
-            {currentPosIdx > 0 && (
-              <TouchableOpacity
-                style={styles.moveButton}
-                onPress={() => movePlayerUp(item.nombre)}
-              >
-                <Text style={styles.moveButtonText}>⬆</Text>
-              </TouchableOpacity>
-            )}
-            {currentPosIdx < posiciones.length - 1 && (
-              <TouchableOpacity
-                style={styles.moveButton}
-                onPress={() => movePlayerDown(item.nombre)}
-              >
-                <Text style={styles.moveButtonText}>⬇</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.dragHandle} {...panResponder.panHandlers}>
+              <Text style={styles.dragHandleText}>⠿</Text>
+            </View>
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => removeJugador(item.nombre)}
@@ -224,8 +290,9 @@ export default function PlayersScreen({ navigation }) {
               <Text style={styles.deleteText}>✖</Text>
             </TouchableOpacity>
           </View>
+          </View>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -249,6 +316,7 @@ export default function PlayersScreen({ navigation }) {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={draggingIndex === null}
         >
           {/* Input + botón añadir */}
           <View style={styles.inputSection}>
@@ -405,12 +473,12 @@ const styles = StyleSheet.create({
     marginLeft: 18,
     marginTop: 50,
     marginBottom: -20,
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     shadowColor: "#000",
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.5,
@@ -433,7 +501,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(27,27,27,0.92)",
+    backgroundColor: "rgba(20,14,10,0.86)",
     paddingTop: 20,
   },
   scrollContent: {
@@ -447,7 +515,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#111",
+    backgroundColor: "#1c130d",
     color: "#fff",
     paddingHorizontal: 15,
     paddingVertical: 12,
@@ -455,24 +523,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     fontFamily: "monospace",
     letterSpacing: 1,
-    shadowColor: "#c0392b",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
   },
   primaryButton: {
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 12,
     paddingHorizontal: 22,
     paddingVertical: 15,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.8,
     shadowRadius: 4,
@@ -488,16 +556,16 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   secondaryButton: {
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 14,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     flex: 1,
-    shadowColor: "#c0392b",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.7,
     shadowRadius: 4,
@@ -524,20 +592,20 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   infoBox: {
-    backgroundColor: "#111",
+    backgroundColor: "#1c130d",
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: "#c0392b",
-    shadowColor: "#c0392b",
+    borderLeftColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
   },
   infoText: {
-    color: "#c0392b",
+    color: "#d4a04c",
     fontSize: 14,
     fontWeight: "700",
     fontFamily: "monospace",
@@ -546,15 +614,25 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   playerCard: {
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 14,
     padding: 10,
+    paddingLeft: 16,
     borderWidth: 2,
-    borderColor: "#888",
-    shadowColor: "#888",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.7,
+    borderColor: "#8a6a3a",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.6,
     shadowRadius: 6,
+    overflow: "hidden",
+    position: "relative",
+  },
+  roleAccent: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 6,
   },
   playerContent: {
     flexDirection: "row",
@@ -571,25 +649,25 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   avatar: {
-    width: 74,
-    height: 74,
-    borderRadius: 10,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: "#888",
-    borderWidth: 2,
-    borderColor: "#c0392b",
+    borderWidth: 3,
+    borderColor: "#d4a04c",
   },
   avatarEditBadge: {
     position: "absolute",
-    bottom: -4,
-    right: -4,
-    backgroundColor: "#222",
-    borderRadius: 8,
+    bottom: -2,
+    right: -2,
+    backgroundColor: "#2a1c14",
+    borderRadius: 10,
     width: 20,
     height: 20,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
   },
   avatarEditBadgeText: {
     fontSize: 10,
@@ -599,73 +677,89 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   playerName: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "900",
-    fontFamily: "monospace",
+    color: "#f3e6d3",
+    fontSize: 19,
+    fontWeight: "700",
+    fontFamily: "serif",
     textShadowColor: "#000",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
   playerNameInput: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "900",
-    fontFamily: "monospace",
+    color: "#f3e6d3",
+    fontSize: 19,
+    fontWeight: "700",
+    fontFamily: "serif",
     borderBottomWidth: 2,
-    borderBottomColor: "#c0392b",
+    borderBottomColor: "#d4a04c",
     paddingVertical: 2,
     minWidth: 120,
   },
   roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: "flex-start",
-    backgroundColor: "#888",
-    borderWidth: 2,
-    borderColor: "#b3afaf",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderWidth: 1,
+    borderColor: "rgba(212,160,76,0.4)",
     marginTop: 2,
   },
+  roleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   roleText: {
-    color: "#fff",
+    color: "#e8d5b7",
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "700",
     fontFamily: "monospace",
-    textShadowColor: "#000",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   playerActions: {
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
   },
-  moveButton: {
-    backgroundColor: "#222",
+  dragHandle: {
+    backgroundColor: "#2a1c14",
     borderRadius: 8,
     width: 38,
     height: 38,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
+    borderColor: "#d4a04c",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
   },
-  moveButtonText: {
+  dragHandleText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     fontFamily: "monospace",
     textShadowColor: "#000",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
+  playerCardWrapperDragging: {
+    zIndex: 10,
+  },
+  playerCardDragging: {
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    transform: [{ scale: 1.03 }],
+  },
   deleteButton: {
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 8,
     width: 38,
     height: 38,
@@ -673,7 +767,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#c0392b",
-    shadowColor: "#c0392b",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
@@ -706,14 +800,14 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   avatarModal: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#2a1c14",
     borderRadius: 16,
     padding: 20,
     width: "90%",
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     maxHeight: "70%",
-    shadowColor: "#c0392b",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -728,7 +822,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   avatarModalSubtitle: {
-    color: "#c0392b",
+    color: "#d4a04c",
     fontSize: 14,
     fontWeight: "700",
     fontFamily: "monospace",
@@ -748,7 +842,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   avatarOptionSelected: {
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     transform: [{ scale: 1.1 }],
   },
   avatarOptionImage: {
@@ -760,7 +854,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: "#c0392b",
+    backgroundColor: "#d4a04c",
     borderRadius: 10,
     width: 20,
     height: 20,

@@ -131,6 +131,49 @@ const BEBIDAS = [
   require("../../assets/bebidas/Bebida13.png"),
 ];
 
+const TOROMBOLO_TUTORIAL_RULES = [
+  {
+    icon: "🔢",
+    title: "1. Par o impar",
+    text: "Adivina si la siguiente carta será par o impar.",
+  },
+  {
+    icon: "🔼",
+    title: "2. Arriba, abajo o igual",
+    text: "Compara con la carta anterior: ¿la siguiente será más alta, más baja o igual?",
+  },
+  {
+    icon: "↔️",
+    title: "3. Dentro o fuera",
+    text: "Adivina si la carta estará entre las dos anteriores o fuera de ese rango.",
+  },
+  {
+    icon: "♠️",
+    title: "4. Palo",
+    text: "Adivina el palo de la carta: Bastos, Copas, Espadas u Oros.",
+  },
+  {
+    icon: "🍻",
+    title: "Sale un 1",
+    text: "¡Beben TODOS los jugadores!",
+  },
+  {
+    icon: "👑",
+    title: "Última carta",
+    text: "Si aciertas y sale un As, continúa el jugador de la derecha. Si sale un Rey, continúa el de la izquierda. Con un 1 o un Rey como última carta, el Torombolo se reinicia para el siguiente jugador.",
+  },
+  {
+    icon: "⚠️",
+    title: "Cada fallo",
+    text: "¡A beber!",
+  },
+  {
+    icon: "🎉",
+    title: "Victoria",
+    text: "Completa las 4 pruebas para ganar.",
+  },
+];
+
 function crearBaraja(cartas) {
   const baraja = [];
   PALOS.forEach((palo) => {
@@ -201,8 +244,8 @@ export default function ToromboloScreen({ navigation, route }) {
     const entry = {
       ...card,
       _id: Date.now() + Math.floor(Math.random() * 10000),
-      _x: Math.round((Math.random() - 0.5) * 200),
-      _y: Math.round((Math.random() - 0.5) * 120),
+      _x: Math.round((Math.random() - 0.5) * 150),
+      _y: Math.round((Math.random() - 0.5) * 90),
       _rot: Math.round((Math.random() - 0.5) * 60),
     };
     setTDiscarded((prev) => [...prev, entry]);
@@ -256,7 +299,7 @@ export default function ToromboloScreen({ navigation, route }) {
         duration: 300,
         useNativeDriver: true,
       }),
-      // Animated.delay(1400),
+      Animated.delay(1500),
       Animated.timing(bebidaFadeAnim, {
         toValue: 0,
         duration: 300,
@@ -274,7 +317,10 @@ export default function ToromboloScreen({ navigation, route }) {
     const guessedPar = choice === "par";
     if (isPar === guessedPar) {
       // Si justo hemos acertado la carta 40, permitir extraRound
-      if (tDeck.length === 0) setExtraRoundAllowed(true);
+      if (tDeck.length === 0) {
+        setExtraRoundAllowed(true);
+        setExtraRoundUsed(false);
+      }
       setTStep(2);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
@@ -299,7 +345,10 @@ export default function ToromboloScreen({ navigation, route }) {
     else ok = card.valor === prev.valor;
 
     if (ok) {
-      if (tDeck.length === 0 && extraRoundAllowed) setExtraRoundAllowed(true);
+      if (tDeck.length === 0) {
+        setExtraRoundAllowed(true);
+        setExtraRoundUsed(false);
+      }
       setTStep(3);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
@@ -326,7 +375,10 @@ export default function ToromboloScreen({ navigation, route }) {
     else ok = card.valor === a.valor || card.valor === b.valor;
 
     if (ok) {
-      if (tDeck.length === 0 && extraRoundAllowed) setExtraRoundAllowed(true);
+      if (tDeck.length === 0) {
+        setExtraRoundAllowed(true);
+        setExtraRoundUsed(false);
+      }
       setTStep(4);
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
@@ -342,8 +394,12 @@ export default function ToromboloScreen({ navigation, route }) {
     if (card.palo === palo) {
       setTTotalPassed((n) => n + 1);
       setTSuccesses((s) => [...s, card]);
-      // Special passing rules on final round
+      // Si la carta ganadora es Rey o As, pasa al jugador del lado.
+      // Si además era la última carta del mazo (la nº40, o una extra si hizo
+      // falta sacar más para terminar), el mazo se reinicia entero para que
+      // el siguiente jugador tenga cartas con las que jugar.
       const n = jugadores.length || 3;
+      const isLastCard = tDeck.length <= 1;
       if (card.valor === 1) {
         const next = (currentPlayerIndex + 1) % n; // pasa a la derecha
         playerChangeAnim.setValue(0);
@@ -363,6 +419,11 @@ export default function ToromboloScreen({ navigation, route }) {
         setTStep(1);
         setTCards([]);
         setTSuccesses([]);
+        if (isLastCard) {
+          setTDeck(crearBaraja(CARTAS));
+          setExtraRoundAllowed(false);
+          setExtraRoundUsed(false);
+        }
       } else if (card.valor === 12) {
         const prev = (currentPlayerIndex - 1 + n) % n; // pasa a la izquierda
         playerChangeAnim.setValue(0);
@@ -382,6 +443,11 @@ export default function ToromboloScreen({ navigation, route }) {
         setTStep(1);
         setTCards([]);
         setTSuccesses([]);
+        if (isLastCard) {
+          setTDeck(crearBaraja(CARTAS));
+          setExtraRoundAllowed(false);
+          setExtraRoundUsed(false);
+        }
       } else {
         setTFinished(true);
       }
@@ -658,31 +724,17 @@ export default function ToromboloScreen({ navigation, route }) {
               style={styles.tutorialScroll}
               showsVerticalScrollIndicator={true}
             >
-              <Text style={styles.tutorialText}>{`El Torombolo tiene 4 pruebas:
-
-1️⃣ PAR/IMPAR
-Adivina si la siguiente carta será par o impar.
-
-2️⃣ ARRIBA/ABAJO/IGUAL
-Compara con la carta anterior. Elige si la próxima será más alta, más baja o igual.
-
-3️⃣ DENTRO/FUERA/IGUAL
-La carta debe estar entre las dos anteriores o fuera.
-
-4️⃣ PALO
-Adivina el palo (Bastos, Copas, Espadas, Oros).
-
-⚠️ REGLAS IMPORTANTES:
-
-🍻 Si sale un 1: ¡Beben TODOS los jugadores!
-
-👑 Si es la última carta:
-• Si acierta y sale un 1 (As): El juego continúa con el jugador de la DERECHA
-• Si acierta y sale un Rey: El juego continúa con el jugador de la IZQUIERDA
-• Si en cualquier caso la carta es un 1 o Rey como última carta: El Torombolo se reinicia para el siguiente jugador
-
-⚠️ Cada fallo: ¡A beber!
-🎉 Completa las 4 pruebas para ganar.`}</Text>
+              {TOROMBOLO_TUTORIAL_RULES.map((rule, i) => (
+                <View key={i} style={styles.tutorialRuleCard}>
+                  <View style={styles.tutorialRuleIconBox}>
+                    <Text style={styles.tutorialRuleIcon}>{rule.icon}</Text>
+                  </View>
+                  <View style={styles.tutorialRuleTextBox}>
+                    <Text style={styles.tutorialRuleTitle}>{rule.title}</Text>
+                    <Text style={styles.tutorialRuleText}>{rule.text}</Text>
+                  </View>
+                </View>
+              ))}
             </ScrollView>
           </Animated.View>
         </View>
@@ -708,7 +760,7 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
   },
   title: { color: "#fff", fontSize: 38, fontWeight: "700" },
   playerHeaderInfo: {
@@ -739,16 +791,16 @@ const styles = StyleSheet.create({
   },
   tDiscardPile: {
     top: -50,
-    width: 280,
-    height: 160,
+    width: 210,
+    height: 120,
     alignItems: "center",
     justifyContent: "center",
   },
   tDiscardCard: {
     position: "absolute",
-    width: 100,
-    height: 150,
-    borderRadius: 8,
+    width: 74,
+    height: 111,
+    borderRadius: 6,
   },
   tRevealedCard: { width: 180, height: 270, borderRadius: 10 },
   drawPlaceholder: {
@@ -792,7 +844,7 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
   btn: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#d4a04c",
     borderRadius: 14,
     paddingHorizontal: 24,
     paddingVertical: 16,
@@ -800,7 +852,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: "rgba(255,255,255,0.35)",
-    shadowColor: "#FF6B35",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -826,7 +878,7 @@ const styles = StyleSheet.create({
   stats: { color: "#fff" },
   backBtn: {
     marginTop: 6,
-    backgroundColor: "#c0392b",
+    backgroundColor: "#d4a04c",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
@@ -876,14 +928,14 @@ const styles = StyleSheet.create({
   },
   endContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(20,20,20,0.98)",
+    backgroundColor: "rgba(30,20,14,0.98)",
     borderRadius: 20,
     padding: 28,
     borderWidth: 3,
-    borderColor: "#FF6B35",
+    borderColor: "#d4a04c",
     width: "100%",
     maxWidth: 380,
-    shadowColor: "#FF6B35",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -893,11 +945,11 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     borderWidth: 2,
-    borderColor: "#c0392b",
+    borderColor: "#d4a04c",
     marginBottom: 12,
   },
   endTitle: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 24,
     fontWeight: "900",
     textAlign: "center",
@@ -912,10 +964,10 @@ const styles = StyleSheet.create({
   },
   endStatsPanel: {
     width: "100%",
-    backgroundColor: "rgba(255,107,53,0.08)",
+    backgroundColor: "rgba(212,160,76,0.08)",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,107,53,0.3)",
+    borderColor: "rgba(212,160,76,0.3)",
     paddingVertical: 6,
     marginBottom: 24,
   },
@@ -928,7 +980,7 @@ const styles = StyleSheet.create({
   },
   endStatRowMid: {
     borderBottomWidth: 1,
-    borderColor: "rgba(255,107,53,0.2)",
+    borderColor: "rgba(212,160,76,0.2)",
   },
   endStatLabel: {
     color: "#fff",
@@ -936,12 +988,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   endStatValue: {
-    color: "#FF6B35",
+    color: "#d4a04c",
     fontSize: 17,
     fontWeight: "900",
   },
   endButton: {
-    backgroundColor: "#FF6B35",
+    backgroundColor: "#d4a04c",
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 14,
@@ -968,8 +1020,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bebidaImage: {
-    width: 180,
-    height: 220,
+    width: 165,
+    height: 201,
     resizeMode: "contain",
   },
   bebidaText: {
@@ -986,13 +1038,13 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
     borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -1003,12 +1055,12 @@ const styles = StyleSheet.create({
     left: 20,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    backgroundColor: "#222",
+    backgroundColor: "#2a1c14",
     borderRadius: 8,
     zIndex: 100,
     borderWidth: 2,
-    borderColor: "#c0392b",
-    shadowColor: "#c0392b",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.6,
     shadowRadius: 4,
@@ -1039,42 +1091,82 @@ const styles = StyleSheet.create({
     zIndex: 500,
   },
   tutorialPopup: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 12,
+    backgroundColor: "#2a1c14",
+    borderRadius: 16,
     padding: 20,
+    paddingTop: 24,
     maxHeight: "80%",
-    width: "85%",
+    width: "88%",
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   tutorialClose: {
     position: "absolute",
     top: 10,
     right: 10,
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    zIndex: 1,
   },
   tutorialCloseText: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
   },
   tutorialTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
+    color: "#d4a04c",
+    fontSize: 22,
+    fontWeight: "900",
+    marginBottom: 16,
     textAlign: "center",
+    letterSpacing: 0.5,
   },
   tutorialScroll: {
-    maxHeight: 400,
+    maxHeight: 420,
   },
-  tutorialText: {
-    color: "#ddd",
-    fontSize: 13,
-    lineHeight: 20,
+  tutorialRuleCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "rgba(212, 160, 76, 0.08)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(212, 160, 76, 0.25)",
+  },
+  tutorialRuleIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(212, 160, 76, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  tutorialRuleIcon: {
+    fontSize: 20,
+  },
+  tutorialRuleTextBox: {
+    flex: 1,
+  },
+  tutorialRuleTitle: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  tutorialRuleText: {
+    color: "#ccc",
+    fontSize: 12,
+    lineHeight: 17,
   },
   playerChangeOverlay: {
     position: "absolute",
