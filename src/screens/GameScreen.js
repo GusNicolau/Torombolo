@@ -488,28 +488,6 @@ export default function GameScreen({ navigation, route }) {
     }
   };
 
-  // TODO(debug): quitar junto con el botón "Forzar final" cuando terminemos
-  // de probar la pantalla de resultados
-  const debugForceGameOver = () => {
-    if (gameOver || revealedCard || showCoinFlipper || showFinishConfirm)
-      return;
-    const counts = playerCards.map((c) => c.length);
-    const min = Math.min(...counts);
-    const losers = counts
-      .map((count, idx) => ({ count, idx }))
-      .filter((obj) => obj.count === min);
-    if (losers.length === 1) {
-      setLoserIndex(losers[0].idx);
-      setFinalCounts(counts);
-      setGameOver(true);
-    } else {
-      startLoserCoinFlip(
-        losers.map((l) => l.idx),
-        counts,
-      );
-    }
-  };
-
   const showTutorialPopup = () => {
     setShowTutorial(true);
     tutorialFadeAnim.setValue(0);
@@ -714,13 +692,6 @@ export default function GameScreen({ navigation, route }) {
             onPress={showTutorialPopup}
           >
             <Text style={styles.tutorialBtnText}>?</Text>
-          </TouchableOpacity>
-          {/* TODO(debug): quitar cuando terminemos de probar resultados */}
-          <TouchableOpacity
-            style={styles.debugEndBtn}
-            onPress={debugForceGameOver}
-          >
-            <Text style={styles.debugEndBtnText}>🏁 Forzar final</Text>
           </TouchableOpacity>
         </>
       )}
@@ -1171,24 +1142,6 @@ export default function GameScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // TODO(debug): quitar junto con debugForceGameOver
-  debugEndBtn: {
-    position: "absolute",
-    top: 56,
-    alignSelf: "center",
-    backgroundColor: "#e91e63",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    zIndex: 100,
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  debugEndBtnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
   tutorialBtn: {
     position: "absolute",
     top: 56,
@@ -1196,12 +1149,16 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "#2a1c14",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
   tutorialBtnText: {
     color: "#fff",
@@ -1212,13 +1169,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 56,
     left: 20,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "#2a1c14",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
     zIndex: 100,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "#d4a04c",
+    shadowColor: "#d4a04c",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
   },
   backButtonText: {
     color: "#fff",

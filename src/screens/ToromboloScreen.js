@@ -1020,8 +1020,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bebidaImage: {
-    width: 165,
-    height: 201,
+    width: 230,
+    height: 280,
     resizeMode: "contain",
   },
   bebidaText: {
