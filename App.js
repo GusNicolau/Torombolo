@@ -1,13 +1,14 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useEffect, useRef } from "react";
-import { AppState } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { AppState, View } from "react-native";
 import { PlayersProvider } from "./src/context/PlayersContext";
 import {
   SoundSettingsProvider,
   useSoundSettings,
 } from "./src/context/SoundSettingsContext";
 import GameScreen from "./src/screens/GameScreen";
+import LoadingScreen from "./src/screens/LoadingScreen";
 import MenuScreen from "./src/screens/MenuScreen";
 import MoustacheScreen from "./src/screens/MoustacheScreen";
 import PlayersScreen from "./src/screens/PlayersScreen";
@@ -148,10 +149,17 @@ function AppContent() {
 }
 
 export default function App() {
+  const [showLoading, setShowLoading] = useState(true);
+
   return (
     <PlayersProvider>
       <SoundSettingsProvider>
-        <AppContent />
+        <View style={{ flex: 1 }}>
+          <AppContent />
+          {showLoading && (
+            <LoadingScreen onFinish={() => setShowLoading(false)} />
+          )}
+        </View>
       </SoundSettingsProvider>
     </PlayersProvider>
   );

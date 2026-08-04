@@ -4,7 +4,7 @@
     "slug": "torombolo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/tapete/Tapete1.png",
+    "icon": "./assets/images/IconoFlat.png",
     "scheme": "torombolo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,10 +13,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/tapete/Tapete1.png",
-        "backgroundImage": "./assets/tapete/Tapete1.png",
-        "monochromeImage": "./assets/tapete/Tapete1.png"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/images/IconoFlat.png",
+        "monochromeImage": "./assets/images/IconoFlat.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -24,19 +23,19 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/tapete/Tapete1.png"
+      "favicon": "./assets/images/IconoFlat.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/tapete/Tapete1.png",
-          "imageWidth": 200,
+          "image": "./assets/images/Gus.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#ffffff"
           }
         }
       ],
