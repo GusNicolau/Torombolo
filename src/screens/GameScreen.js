@@ -881,7 +881,7 @@ export default function GameScreen({ navigation, route }) {
           <View
             style={[
               styles.coinContent,
-              { paddingVertical: Math.min(height * 0.15, 100) },
+              { paddingVertical: Math.min(height * 0.22, 180) },
             ]}
           >
             <View style={styles.coinAvatarRow} pointerEvents="box-none">
