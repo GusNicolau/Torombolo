@@ -498,6 +498,13 @@ export default function GameScreen({ navigation, route }) {
     }).start();
   };
 
+  // El tutorial se abre solo al empezar la partida para que los
+  // jugadores lo lean antes de jugar.
+  useEffect(() => {
+    showTutorialPopup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const closeTutorialPopup = () => {
     Animated.timing(tutorialFadeAnim, {
       toValue: 0,
@@ -784,7 +791,7 @@ export default function GameScreen({ navigation, route }) {
                 },
               ]}
             >
-              <Text style={styles.revealedTargetLabel}>Le toca a</Text>
+              <Text style={styles.revealedTargetLabel}>Le toca beber a</Text>
               <Image
                 source={revealedCardTarget.player.imagen}
                 style={styles.revealedTargetAvatar}

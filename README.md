@@ -1,50 +1,44 @@
-# Welcome to your Expo app 👋
+# Torombolo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App móvil (React Native / Expo) del juego de cartas y bebida Torombolo.
 
-## Get started
+La partida tiene dos fases:
 
-1. Install dependencies
+1. **Reparto de cartas**: entre 3 y 4 jugadores, cada uno recibe cartas según
+   su posición (números, figuras o palo, según el número de jugadores) hasta
+   que alguien se queda sin cartas en relación a los demás. Ese jugador
+   pierde.
+2. **Torombolo**: el perdedor se enfrenta a una ronda de 4 pruebas con la
+   baraja (par/impar, arriba/abajo/igual, dentro/fuera/igual y palo). Cada
+   fallo es un trago.
 
-   ```bash
-   npm install
-   ```
+## Requisitos
 
-2. Start the app
+- Node.js
+- Expo Go (para probar en el móvil) o un emulador/simulador
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Empezar
 
 ```bash
-npm run reset-project
+npm install
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Esto abre el Metro bundler; desde ahí puedes abrir la app en Expo Go, un
+emulador Android o un simulador iOS.
 
-## Learn more
+## Generar un APK
 
-To learn more about developing your project with Expo, look at the following resources:
+El proyecto usa EAS Build. Con sesión iniciada en la cuenta de Expo
+correspondiente:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx eas-cli build -p android --profile preview
+```
 
-## Join the community
+El perfil `preview` genera un APK instalable directamente (no un AAB), listo
+para repartir sin pasar por la Play Store.
 
-Join our community of developers creating universal apps.
+## Licencia
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+© 2026 Gustavo Nicolau. Todos los derechos reservados. Ver [LICENSE](./LICENSE).

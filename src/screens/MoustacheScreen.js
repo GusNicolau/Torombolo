@@ -20,6 +20,14 @@ const moustacheAmigas = [
   { nombre: "Calent", imagen: require("../../assets/moustache/dani.png") },
   { nombre: "Amerla", imagen: require("../../assets/moustache/ale.png") },
   { nombre: "Cigrona", imagen: require("../../assets/moustache/lara.png") },
+  {
+    nombre: "Pantorrilla",
+    imagen: require("../../assets/moustache/pantorrilla.png"),
+  },
+  {
+    nombre: "Princesa",
+    imagen: require("../../assets/moustache/princesa.png"),
+  },
 ];
 
 const avatares = [

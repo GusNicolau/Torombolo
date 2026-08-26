@@ -261,6 +261,23 @@ export default function ToromboloScreen({ navigation, route }) {
   const playerChangeAnim = useState(new Animated.Value(0))[0];
   const endFadeAnim = useState(new Animated.Value(0))[0];
 
+  const showTutorialPopup = () => {
+    setShowTutorial(true);
+    tutorialFadeAnim.setValue(0);
+    Animated.timing(tutorialFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // El tutorial se abre solo al empezar el Torombolo para que el
+  // jugador lo lea antes de jugar.
+  useEffect(() => {
+    showTutorialPopup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (tFinished) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -511,18 +528,7 @@ export default function ToromboloScreen({ navigation, route }) {
         <Text style={styles.finalizarBtnText}>Finalizar</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.tutorialBtn}
-        onPress={() => {
-          setShowTutorial(true);
-          tutorialFadeAnim.setValue(0);
-          Animated.timing(tutorialFadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }).start();
-        }}
-      >
+      <TouchableOpacity style={styles.tutorialBtn} onPress={showTutorialPopup}>
         <Text style={styles.tutorialBtnText}>?</Text>
       </TouchableOpacity>
 
