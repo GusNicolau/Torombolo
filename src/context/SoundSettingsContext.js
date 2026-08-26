@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
-import { AppState } from "react-native";
 import { updateSoundSettings } from "../soundManager"; // añade este import
 
 const SoundSettingsContext = createContext();
@@ -9,7 +8,6 @@ export const SoundSettingsProvider = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [backgroundVolume, setBackgroundVolume] = useState(0.7);
   const [sfxVolume, setSfxVolume] = useState(1);
-  const [appState, setAppState] = useState(AppState.currentState);
   const [barajaSeleccionada, setBarajaSeleccionada] = useState("cartas");
   const [isReady, setIsReady] = useState(false);
 
@@ -26,12 +24,12 @@ export const SoundSettingsProvider = ({ children }) => {
           AsyncStorage.getItem("sfxVolume"),
         ]);
 
-        const enabled =
-          enabledRaw !== null ? JSON.parse(enabledRaw) : soundEnabled;
-        const bgVol =
-          bgVolRaw !== null ? parseFloat(bgVolRaw) : backgroundVolume;
-        const sfxVol =
-          sfxVolRaw !== null ? parseFloat(sfxVolRaw) : sfxVolume;
+        // Los valores por defecto de abajo son los mismos que los iniciales
+        // de useState; así este efecto no depende del estado externo y
+        // puede ejecutarse una única vez de forma segura.
+        const enabled = enabledRaw !== null ? JSON.parse(enabledRaw) : true;
+        const bgVol = bgVolRaw !== null ? parseFloat(bgVolRaw) : 0.7;
+        const sfxVol = sfxVolRaw !== null ? parseFloat(sfxVolRaw) : 1;
 
         setSoundEnabled(enabled);
         setBackgroundVolume(bgVol);
@@ -54,15 +52,6 @@ export const SoundSettingsProvider = ({ children }) => {
     loadSettings();
   }, []);
 
-  // Listen to app state changes
-  useEffect(() => {
-    const subscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange,
-    );
-    return () => subscription.remove();
-  }, [soundEnabled]);
-
   const updateBaraja = async (baraja) => {
     setBarajaSeleccionada(baraja); // ← esto debe ejecutarse SIEMPRE
     try {
@@ -71,15 +60,6 @@ export const SoundSettingsProvider = ({ children }) => {
       console.warn("Error saving baraja:", error.message);
       // El estado ya se actualizó arriba, el error solo afecta a la persistencia
     }
-  };
-
-  const handleAppStateChange = async (nextAppState) => {
-    if (appState.match(/inactive|background/) && nextAppState === "active") {
-      // App has come to foreground - you can restart music if needed
-    } else if (nextAppState.match(/inactive|background/)) {
-      // App has gone to background - should stop music
-    }
-    setAppState(nextAppState);
   };
 
   const toggleSound = async () => {
@@ -139,7 +119,6 @@ export const SoundSettingsProvider = ({ children }) => {
     updateBackgroundVolume,
     sfxVolume,
     updateSfxVolume,
-    appState,
     barajaSeleccionada,
     updateBaraja,
     isReady,

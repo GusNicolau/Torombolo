@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
 export default function CoinFlipper({
@@ -12,13 +12,7 @@ export default function CoinFlipper({
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
 
-  useEffect(() => {
-    if (start && !running) {
-      flipCoin();
-    }
-  }, [start, running]);
-
-  const flipCoin = () => {
+  const flipCoin = useCallback(() => {
     setRunning(true);
     const randomResult = Math.random() > 0.5 ? "cara" : "cruz";
     setResult(null);
@@ -48,7 +42,13 @@ export default function CoinFlipper({
       }).start();
       onFlipComplete && onFlipComplete(randomResult);
     });
-  };
+  }, [flipAnim, resultScale, onFlipComplete]);
+
+  useEffect(() => {
+    if (start && !running) {
+      flipCoin();
+    }
+  }, [start, running, flipCoin]);
 
   // Gira la cara real (no una capa invisible aparte), con perspectiva para
   // que se note el giro en 3D. La cara trasera va siempre 180° detrás de

@@ -1,4 +1,4 @@
-import { Audio } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 
 let backgroundSound = null;
 let cachedSounds = {};
@@ -10,10 +10,10 @@ let soundSettings = {
 
 export const initSounds = async () => {
   try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: false,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
+    await setAudioModeAsync({
+      playsInSilentMode: false,
+      shouldPlayInBackground: false,
+      interruptionMode: "duckOthers",
     });
 
     // Preload sounds for faster playback
@@ -31,8 +31,7 @@ const preloadSounds = async () => {
 
   for (const [name, file] of Object.entries(soundFiles)) {
     try {
-      const { sound } = await Audio.Sound.createAsync(file);
-      cachedSounds[name] = sound;
+      cachedSounds[name] = createAudioPlayer(file);
     } catch (error) {
       console.warn(`Error preloading ${name}:`, error.message);
     }
@@ -71,37 +70,37 @@ export const playSound = async (soundName) => {
         return;
       }
 
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        soundFiles[soundName],
-      );
-      sound = newSound;
+      sound = createAudioPlayer(soundFiles[soundName]);
       isNew = true;
     }
 
     try {
       // Set volume based on sound type
-      await sound.setVolumeAsync(soundSettings.sfxVolume);
+      sound.volume = soundSettings.sfxVolume;
 
       // Reset playback to start if using cached sound
       if (!isNew) {
-        await sound.stopAsync();
-        await sound.playFromPositionAsync(0);
-      } else {
-        await sound.playAsync();
+        sound.pause();
+        await sound.seekTo(0);
       }
+      sound.play();
 
-      // Auto-unload after playing if it was newly created
+      // Auto-release after playing if it was newly created
       if (isNew) {
-        sound.setOnPlaybackStatusUpdate(async (status) => {
-          if (status.didJustFinish) {
-            await sound.unloadAsync();
-          }
-        });
+        const subscription = sound.addListener(
+          "playbackStatusUpdate",
+          (status) => {
+            if (status.didJustFinish) {
+              subscription.remove();
+              sound.remove();
+            }
+          },
+        );
       }
     } catch (error) {
       console.warn(`Error playing ${soundName}:`, error.message);
       if (isNew) {
-        await sound.unloadAsync();
+        sound.remove();
       }
     }
   } catch (error) {
@@ -118,25 +117,23 @@ export const playBackgroundMusic = async () => {
   try {
     if (backgroundSound) {
       try {
-        await backgroundSound.stopAsync();
-        await backgroundSound.unloadAsync();
+        backgroundSound.pause();
+        backgroundSound.remove();
       } catch (_e) {
         // Ignore cleanup errors
       }
     }
 
-    const { sound } = await Audio.Sound.createAsync(
-      require("../assets/audio/mandolina.mp3"),
-    );
+    const sound = createAudioPlayer(require("../assets/audio/mandolina.mp3"));
     try {
-      await sound.setIsLoopingAsync(true);
+      sound.loop = true;
       const volumeToSet = soundSettings.backgroundVolume || 0.7;
-      await sound.setVolumeAsync(volumeToSet);
-      await sound.playAsync();
+      sound.volume = volumeToSet;
+      sound.play();
       backgroundSound = sound;
     } catch (error) {
       console.warn("Error during background music setup:", error.message);
-      await sound.unloadAsync();
+      sound.remove();
     }
   } catch (error) {
     console.warn("Error playing background music:", error.message);
@@ -146,7 +143,7 @@ export const playBackgroundMusic = async () => {
 export const updateBackgroundMusicVolume = async (volume) => {
   try {
     if (backgroundSound) {
-      await backgroundSound.setVolumeAsync(volume);
+      backgroundSound.volume = volume;
     }
   } catch (error) {
     console.warn("Error updating background music volume:", error.message);
@@ -158,14 +155,14 @@ export const toggleBackgroundMusic = async (enabled) => {
     if (enabled) {
       // Resume or start background music
       if (backgroundSound) {
-        await backgroundSound.playAsync();
+        backgroundSound.play();
       } else {
         await playBackgroundMusic();
       }
     } else {
       // Pause background music
       if (backgroundSound) {
-        await backgroundSound.pauseAsync();
+        backgroundSound.pause();
       }
     }
   } catch (error) {
@@ -176,8 +173,8 @@ export const toggleBackgroundMusic = async (enabled) => {
 export const stopBackgroundMusic = async () => {
   try {
     if (backgroundSound) {
-      await backgroundSound.stopAsync();
-      await backgroundSound.unloadAsync();
+      backgroundSound.pause();
+      backgroundSound.remove();
       backgroundSound = null;
     }
   } catch (error) {
