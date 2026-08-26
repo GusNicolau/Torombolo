@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -42,6 +43,8 @@ const avatares = [
 ];
 
 export default function MoustacheScreen({ navigation }) {
+  const { width } = useWindowDimensions();
+  const cardSize = Math.min(150, (width - 80) / 2);
   const { addJugador, getAllPlayers } = usePlayers();
   const [seleccionados, setSeleccionados] = useState([]);
   const [maxAlertShown, setMaxAlertShown] = useState(false);
@@ -162,6 +165,7 @@ export default function MoustacheScreen({ navigation }) {
                   onPress={() => toggleSeleccion(item.nombre)}
                   style={[
                     styles.cardContainer,
+                    { width: cardSize, height: cardSize },
                     isSelected && styles.cardSelected,
                     disabled && styles.disabledButton,
                   ]}
@@ -279,8 +283,6 @@ const styles = StyleSheet.create({
   grid: { justifyContent: "center" },
   cardContainer: {
     margin: 10,
-    width: 150,
-    height: 150,
     borderRadius: 15,
     borderWidth: 2,
     borderColor: "#888",

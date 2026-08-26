@@ -633,7 +633,7 @@ export default function GameScreen({ navigation, route }) {
           { left: -30, top: height / 2 - 110, rotate: "90deg" },
           { left: width / 2 - 120, top: 120, rotate: "0deg" },
           { right: -30, top: height / 2 - 120, rotate: "270deg" },
-          { left: width / 2 - 120, top: height - 420, rotate: "0deg" }, // ← top en vez de bottom
+          { left: width / 2 - 120, bottom: 20, rotate: "0deg" },
         ]
       : [
           { left: -30, top: height / 2 - 70, rotate: "90deg" },
@@ -853,7 +853,14 @@ export default function GameScreen({ navigation, route }) {
           )}
           <Animated.Image
             source={revealedCard.imagen}
-            style={[styles.revealedCard, { transform: [{ scale: scaleAnim }] }]}
+            style={[
+              styles.revealedCard,
+              {
+                height: Math.min(370, height * 0.42),
+                width: Math.min(370, height * 0.42) * (240 / 370),
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
           />
         </TouchableOpacity>
       )}
@@ -867,7 +874,12 @@ export default function GameScreen({ navigation, route }) {
               🍺 Duelo por quién pierde
             </Text>
           )}
-          <View style={styles.coinContent}>
+          <View
+            style={[
+              styles.coinContent,
+              { paddingVertical: Math.min(height * 0.15, 100) },
+            ]}
+          >
             <View style={styles.coinAvatarRow} pointerEvents="box-none">
               {coinCandidates.map((pIdx, i) => {
                 const p = players[pIdx];
@@ -954,7 +966,7 @@ export default function GameScreen({ navigation, route }) {
                 <CoinFlipper
                   start={coinFlipping}
                   onFlipComplete={handleCoinFlipComplete}
-                  size={200}
+                  size={Math.min(200, width * 0.5)}
                 />
               )}
             </View>
@@ -1569,7 +1581,6 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 220,
   },
   coinModeCaption: {
     position: "absolute",
@@ -1587,10 +1598,11 @@ const styles = StyleSheet.create({
   },
   coinAvatarRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 20,
+    gap: 12,
+    paddingHorizontal: 12,
   },
   coinAvatarBox: {
     alignItems: "center",

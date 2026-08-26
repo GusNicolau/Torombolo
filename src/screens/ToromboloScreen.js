@@ -245,7 +245,7 @@ export default function ToromboloScreen({ navigation, route }) {
       ...card,
       _id: Date.now() + Math.floor(Math.random() * 10000),
       _x: Math.round((Math.random() - 0.5) * 150),
-      _y: Math.round((Math.random() - 0.5) * 90),
+      _y: Math.round((Math.random() - 0.5) * 60),
       _rot: Math.round((Math.random() - 0.5) * 60),
     };
     setTDiscarded((prev) => [...prev, entry]);
@@ -538,7 +538,11 @@ export default function ToromboloScreen({ navigation, route }) {
             <Image source={loser.imagen} style={styles.playerIcon} />
           )}
           <View style={styles.playerHeaderInfo}>
-            <Text style={styles.subtitle}>
+            <Text
+              style={styles.subtitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {loser?.nombre || `Jugador ${loserIndex + 1}`}
             </Text>
             <Text style={styles.counterText}>
@@ -548,8 +552,8 @@ export default function ToromboloScreen({ navigation, route }) {
         </View>
         <Image
           source={TITULO}
-          style={styles.titleImage}
           resizeMode="contain"
+          style={styles.titleImage}
         />
       </View>
 
@@ -754,11 +758,13 @@ const styles = StyleSheet.create({
   topRow: {
     paddingTop: 110,
     paddingBottom: 12,
+    paddingHorizontal: 16,
     alignItems: "center",
   },
   playerHeader: {
     flexDirection: "row",
     alignItems: "center",
+    maxWidth: "100%",
     gap: 14,
   },
   playerIcon: {
@@ -771,10 +777,12 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 38, fontWeight: "700" },
   playerHeaderInfo: {
     justifyContent: "center",
+    flexShrink: 1,
   },
   titleImage: {
-    width: 340,
-    height: 94,
+    width: "88%",
+    maxWidth: 340,
+    aspectRatio: 340 / 94,
     marginTop: 16,
   },
   subtitle: {
@@ -852,7 +860,7 @@ const styles = StyleSheet.create({
   btn: {
     backgroundColor: "#d4a04c",
     borderRadius: 14,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     justifyContent: "center",
     alignItems: "center",
@@ -862,8 +870,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
-    margin: 6,
-    minWidth: 110,
+    margin: 5,
+    minWidth: 92,
   },
   btnText: {
     color: "#fff",

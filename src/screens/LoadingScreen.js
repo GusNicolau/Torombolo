@@ -1,9 +1,17 @@
 import { useEffect, useRef } from "react";
-import { Animated, Image, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 const GUS = require("../../assets/images/Gus.png");
 
 export default function LoadingScreen({ onFinish }) {
+  const { width } = useWindowDimensions();
+  const size = Math.min(220, width * 0.55);
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -23,8 +31,12 @@ export default function LoadingScreen({ onFinish }) {
 
   return (
     <View style={styles.container}>
-      <Image source={GUS} style={styles.image} resizeMode="contain" />
-      <View style={styles.barTrack}>
+      <Image
+        source={GUS}
+        style={[styles.image, { width: size, height: size }]}
+        resizeMode="contain"
+      />
+      <View style={[styles.barTrack, { width: size }]}>
         <Animated.View style={[styles.barFill, { width: barWidth }]} />
       </View>
     </View>
@@ -40,12 +52,9 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   image: {
-    width: 220,
-    height: 220,
     marginBottom: 36,
   },
   barTrack: {
-    width: 220,
     height: 10,
     borderRadius: 5,
     backgroundColor: "rgba(42,28,20,0.15)",

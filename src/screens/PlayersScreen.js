@@ -263,7 +263,13 @@ export default function PlayersScreen({ navigation }) {
                     setEditingValue(item.nombre);
                   }}
                 >
-                  <Text style={styles.playerName}>{item.nombre}</Text>
+                  <Text
+                    style={styles.playerName}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.nombre}
+                  </Text>
                 </TouchableOpacity>
               )}
 
@@ -274,7 +280,13 @@ export default function PlayersScreen({ navigation }) {
                     { backgroundColor: getRoleColor(index) },
                   ]}
                 />
-                <Text style={styles.roleText}>{getRoleLabel(index)}</Text>
+                <Text
+                  style={styles.roleText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {getRoleLabel(index)}
+                </Text>
               </View>
             </View>
           </View>
@@ -372,7 +384,11 @@ export default function PlayersScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.primaryButton, !canPlay && styles.disabledButton]}
+              style={[
+                styles.primaryButton,
+                { flex: 1 },
+                !canPlay && styles.disabledButton,
+              ]}
               onPress={() => {
                 if (canPlay) {
                   navigation.navigate("Game", { numPlayers: jugadores.length });
@@ -386,7 +402,11 @@ export default function PlayersScreen({ navigation }) {
               disabled={!canPlay}
               activeOpacity={0.8}
             >
-              <Text style={styles.primaryButtonText}>
+              <Text
+                style={styles.primaryButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
                 ▶ JUGAR{" "}
                 {jugadores.length < 3
                   ? `(${jugadores.length}/3)`
@@ -534,7 +554,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: "#2a1c14",
     borderRadius: 12,
-    paddingHorizontal: 22,
+    paddingHorizontal: 14,
     paddingVertical: 15,
     justifyContent: "center",
     alignItems: "center",
@@ -703,6 +723,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: "flex-start",
+    maxWidth: "100%",
     backgroundColor: "rgba(0,0,0,0.3)",
     borderWidth: 1,
     borderColor: "rgba(212,160,76,0.4)",
@@ -718,6 +739,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     fontFamily: "monospace",
+    flexShrink: 1,
   },
   playerActions: {
     flexDirection: "row",
@@ -834,7 +856,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   avatarOption: {
-    margin: 6,
+    margin: 4,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "#555",
@@ -846,8 +868,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.1 }],
   },
   avatarOptionImage: {
-    width: 64,
-    height: 64,
+    width: 54,
+    height: 54,
     borderRadius: 8,
   },
   avatarOptionCheck: {

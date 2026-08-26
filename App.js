@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +8,7 @@ import {
   SoundSettingsProvider,
   useSoundSettings,
 } from "./src/context/SoundSettingsContext";
+import AgeGateScreen from "./src/screens/AgeGateScreen";
 import GameScreen from "./src/screens/GameScreen";
 import LoadingScreen from "./src/screens/LoadingScreen";
 import MenuScreen from "./src/screens/MenuScreen";
@@ -150,14 +152,29 @@ function AppContent() {
 
 export default function App() {
   const [showLoading, setShowLoading] = useState(true);
+  const [ageConfirmed, setAgeConfirmed] = useState(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("ageConfirmed")
+      .then((value) => setAgeConfirmed(value === "true"))
+      .catch(() => setAgeConfirmed(false));
+  }, []);
+
+  const confirmAge = () => {
+    setAgeConfirmed(true);
+    AsyncStorage.setItem("ageConfirmed", "true").catch(() => {});
+  };
 
   return (
     <PlayersProvider>
       <SoundSettingsProvider>
         <View style={{ flex: 1 }}>
           <AppContent />
-          {showLoading && (
+          {(showLoading || ageConfirmed === null) && (
             <LoadingScreen onFinish={() => setShowLoading(false)} />
+          )}
+          {!showLoading && ageConfirmed === false && (
+            <AgeGateScreen onConfirm={confirmAge} />
           )}
         </View>
       </SoundSettingsProvider>

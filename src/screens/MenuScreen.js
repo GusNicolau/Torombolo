@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -11,6 +12,9 @@ const FONDO = require("../../assets/images/Inicio5.png");
 const TITULO = require("../../assets/images/Titulo.png");
 
 export default function MenuScreen({ navigation }) {
+  const { height } = useWindowDimensions();
+  const buttonTop = Math.min(200, height * 0.3);
+
   return (
     <ImageBackground
       source={FONDO}
@@ -22,7 +26,7 @@ export default function MenuScreen({ navigation }) {
           <Image source={TITULO} style={styles.titleImage} />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { top: buttonTop }]}
             onPress={() => navigation.navigate("Players")}
             activeOpacity={0.8}
           >
@@ -30,7 +34,7 @@ export default function MenuScreen({ navigation }) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { top: buttonTop }]}
             onPress={() => navigation.navigate("Settings")}
             activeOpacity={0.8}
           >
@@ -58,13 +62,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   titleImage: {
-    width: 400,
-    height: 140,
+    width: "85%",
+    maxWidth: 400,
+    aspectRatio: 400 / 140,
     resizeMode: "contain",
     marginTop: -130,
   },
   button: {
-    top: 200,
     width: 260,
     paddingVertical: 16,
     backgroundColor: "#2a1c14",

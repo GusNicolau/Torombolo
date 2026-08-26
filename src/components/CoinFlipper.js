@@ -1,10 +1,10 @@
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
 
 export default function CoinFlipper({
   start = false,
-  size = 180,
+  size = Math.min(180, Dimensions.get("window").width * 0.45),
   onFlipComplete,
 }) {
   const flipAnim = useRef(new Animated.Value(0)).current;
