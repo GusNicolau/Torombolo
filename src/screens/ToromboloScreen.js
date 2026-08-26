@@ -261,6 +261,7 @@ export default function ToromboloScreen({ navigation, route }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const tutorialFadeAnim = useState(new Animated.Value(0))[0];
   const [bebidaImage, setBebidaImage] = useState(null);
+  const [isCervezaDrink, setIsCervezaDrink] = useState(false);
   const bebidaFadeAnim = useState(new Animated.Value(0))[0];
   const playerChangeAnim = useState(new Animated.Value(0))[0];
   const endFadeAnim = useState(new Animated.Value(0))[0];
@@ -306,10 +307,12 @@ export default function ToromboloScreen({ navigation, route }) {
     if (card && card.valor === 1) {
       // Si es un 1, mostrar Cerves
       setBebidaImage(CERVEZA);
+      setIsCervezaDrink(true);
     } else {
       // Si no, mostrar una bebida aleatoria
       const randomBebida = BEBIDAS[Math.floor(Math.random() * BEBIDAS.length)];
       setBebidaImage(randomBebida);
+      setIsCervezaDrink(false);
     }
 
     // Animar fade in
@@ -714,7 +717,13 @@ export default function ToromboloScreen({ navigation, route }) {
           <Animated.View
             style={[styles.bebidaContainer, { opacity: bebidaFadeAnim }]}
           >
-            <Image source={bebidaImage} style={styles.bebidaImage} />
+            <Image
+              source={bebidaImage}
+              style={[
+                styles.bebidaImage,
+                isCervezaDrink && styles.bebidaImageCerveza,
+              ]}
+            />
           </Animated.View>
         </View>
       )}
@@ -1038,9 +1047,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   bebidaImage: {
-    width: 230,
-    height: 280,
+    width: 150,
+    height: 183,
     resizeMode: "contain",
+  },
+  bebidaImageCerveza: {
+    width: 280,
+    height: 341,
   },
   bebidaText: {
     color: "#fff",
