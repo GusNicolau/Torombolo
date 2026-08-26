@@ -1,6 +1,12 @@
 import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 
 let backgroundSound = null;
+let backgroundSoundSubscription = null;
+// Cada llamada a playBackgroundMusic incrementa este contador. Si dos
+// llamadas se disparan casi a la vez (p.ej. dos cambios de primer/segundo
+// plano seguidos), la más antigua se descarta al terminar de crear su
+// reproductor en vez de quedarse sonando a la vez que la nueva.
+let backgroundSoundGeneration = 0;
 let cachedSounds = {};
 let soundSettings = {
   enabled: true,
@@ -108,33 +114,67 @@ export const playSound = async (soundName) => {
   }
 };
 
+// Para y libera el reproductor de fondo actual (si hay uno) y su listener.
+const teardownBackgroundSound = () => {
+  if (backgroundSoundSubscription) {
+    backgroundSoundSubscription.remove();
+    backgroundSoundSubscription = null;
+  }
+  if (backgroundSound) {
+    try {
+      backgroundSound.pause();
+      backgroundSound.remove();
+    } catch (_e) {
+      // Ignore cleanup errors
+    }
+    backgroundSound = null;
+  }
+};
+
 export const playBackgroundMusic = async () => {
   // Ningún llamador (GameScreen al volver del menú, reanudar desde
   // background, etc.) debe poder arrancar música si el sonido está
   // desactivado; centralizarlo aquí evita tener que repetir el chequeo
   // en cada sitio que llama a esta función.
   if (!soundSettings.enabled) return;
+
+  const myGeneration = ++backgroundSoundGeneration;
+  teardownBackgroundSound();
+
   try {
-    if (backgroundSound) {
-      try {
-        backgroundSound.pause();
-        backgroundSound.remove();
-      } catch (_e) {
-        // Ignore cleanup errors
-      }
+    const sound = createAudioPlayer(require("../assets/audio/mandolina.mp3"));
+
+    // Si mientras tanto se ha lanzado otra llamada más reciente (dos
+    // cambios de primer/segundo plano seguidos, por ejemplo), esta
+    // instancia se queda obsoleta: se para y no llega a sonar.
+    if (myGeneration !== backgroundSoundGeneration) {
+      sound.remove();
+      return;
     }
 
-    const sound = createAudioPlayer(require("../assets/audio/mandolina.mp3"));
-    try {
-      sound.loop = true;
-      const volumeToSet = soundSettings.backgroundVolume || 0.7;
-      sound.volume = volumeToSet;
-      sound.play();
-      backgroundSound = sound;
-    } catch (error) {
-      console.warn("Error during background music setup:", error.message);
-      sound.remove();
-    }
+    sound.loop = true;
+    const volumeToSet = soundSettings.backgroundVolume || 0.7;
+    sound.volume = volumeToSet;
+    sound.play();
+    backgroundSound = sound;
+
+    // Red de seguridad: en algunos dispositivos la propiedad `loop` de
+    // expo-audio no reinicia la pista al terminar. Si detectamos que ha
+    // terminado, la relanzamos a mano.
+    backgroundSoundSubscription = sound.addListener(
+      "playbackStatusUpdate",
+      async (status) => {
+        if (myGeneration !== backgroundSoundGeneration) return;
+        if (status.didJustFinish) {
+          try {
+            await sound.seekTo(0);
+            sound.play();
+          } catch (error) {
+            console.warn("Error reiniciando el bucle de música:", error.message);
+          }
+        }
+      },
+    );
   } catch (error) {
     console.warn("Error playing background music:", error.message);
   }
@@ -171,12 +211,10 @@ export const toggleBackgroundMusic = async (enabled) => {
 };
 
 export const stopBackgroundMusic = async () => {
+  // Invalida cualquier playBackgroundMusic() que estuviera en curso.
+  backgroundSoundGeneration++;
   try {
-    if (backgroundSound) {
-      backgroundSound.pause();
-      backgroundSound.remove();
-      backgroundSound = null;
-    }
+    teardownBackgroundSound();
   } catch (error) {
     console.warn("Error stopping background music:", error.message);
   }
