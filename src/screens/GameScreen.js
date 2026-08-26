@@ -633,7 +633,7 @@ export default function GameScreen({ navigation, route }) {
           { left: -30, top: height / 2 - 110, rotate: "90deg" },
           { left: width / 2 - 120, top: 120, rotate: "0deg" },
           { right: -30, top: height / 2 - 120, rotate: "270deg" },
-          { left: width / 2 - 120, bottom: 20, rotate: "0deg" },
+          { left: width / 2 - 120, bottom: 260, rotate: "0deg" },
         ]
       : [
           { left: -30, top: height / 2 - 70, rotate: "90deg" },

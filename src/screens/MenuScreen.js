@@ -12,8 +12,10 @@ const FONDO = require("../../assets/images/Inicio5.png");
 const TITULO = require("../../assets/images/Titulo.png");
 
 export default function MenuScreen({ navigation }) {
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const buttonTop = Math.min(200, height * 0.3);
+  const titleWidth = Math.min(400, width * 0.85);
+  const titleHeight = titleWidth * (140 / 400);
 
   return (
     <ImageBackground
@@ -23,7 +25,14 @@ export default function MenuScreen({ navigation }) {
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <Image source={TITULO} style={styles.titleImage} />
+          <Image
+            source={TITULO}
+            resizeMode="contain"
+            style={[
+              styles.titleImage,
+              { width: titleWidth, height: titleHeight },
+            ]}
+          />
 
           <TouchableOpacity
             style={[styles.button, { top: buttonTop }]}
@@ -62,10 +71,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   titleImage: {
-    width: "85%",
-    maxWidth: 400,
-    aspectRatio: 400 / 140,
-    resizeMode: "contain",
     marginTop: -130,
   },
   button: {

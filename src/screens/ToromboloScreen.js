@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { usePlayers } from "../context/PlayersContext";
@@ -192,6 +193,9 @@ function crearBaraja(cartas) {
 }
 
 export default function ToromboloScreen({ navigation, route }) {
+  const { width: screenWidth } = useWindowDimensions();
+  const titleWidth = Math.min(340, screenWidth * 0.88);
+  const titleHeight = titleWidth * (94 / 340);
   const { jugadores } = usePlayers();
   const { barajaSeleccionada } = useSoundSettings(); // ← añade esto
 
@@ -553,7 +557,10 @@ export default function ToromboloScreen({ navigation, route }) {
         <Image
           source={TITULO}
           resizeMode="contain"
-          style={styles.titleImage}
+          style={[
+            styles.titleImage,
+            { width: titleWidth, height: titleHeight },
+          ]}
         />
       </View>
 
@@ -780,9 +787,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   titleImage: {
-    width: "88%",
-    maxWidth: 340,
-    aspectRatio: 340 / 94,
     marginTop: 16,
   },
   subtitle: {
